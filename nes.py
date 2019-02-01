@@ -68,6 +68,10 @@ class ROM:
             for i in range(size):
                 mem.cpu_mem[0x8000 + i] = self.romcache[16 + i]
                 mem.cpu_mem[0xC000 + i] = self.romcache[16 + (self.RPG - 1) * len16k + i]
+                # Reset Vector: PCL from 0xFFFC(Here is i: 0x3FFC and rom offset: 0x800C)
+                #               PCH from 0xFFFD(Here is i: 0x3FFD and rom offset: 0x800D)
+                #if (0xC000 + i == 0xFFFD):
+                #    print('0xFFFD(i: 0x%x, rom offset: 0x%x): 0x%x'%(i, 16 + (self.RPG - 1) * len16k + i, self.romcache[16 + (self.RPG - 1) * len16k + i]))
             #mem.cpu_mem[0x8000:0x8000+size] = self.romcache[16:16+size]
             #mem.cpu_mem[0xC000:0xC000+size] = self.romcache[16+(self.RPG-1)*len16k:16+(self.RPG-1)*len16k+size]
 
@@ -134,14 +138,16 @@ class CPU():
     def execute(self, cycle = 1):
         pc = self.program_counter
         while(cycle > 0):
-            print(' -- CPU Execute -- pc: 0x%x'%(pc))
+            print(' -- CPU Execute -- pc: 0x%x, instruction: 0x%x'%(pc, self.mem.cpu_mem[pc]))
             cycle =- 1
+            pc += 1
+        self.program_counter = pc
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         rom_file_name = sys.argv[1]
     else:
-        rom_file_name= '../supermario.nes'
+        rom_file_name= 'supermario.nes'
 
     rom = ROM()
     if rom.headercheck(rom_file_name) != True:
