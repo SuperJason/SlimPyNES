@@ -10,6 +10,30 @@ class CPU():
     def __init__(self, mem):
         self.mem = mem
         self.debug = self.DBG_OPCODE 
+        self.cnt = 0
+
+    def sign8(self, data):
+        ret = data & 0xff
+        if ret > 127:
+            ret -= 256
+        return ret
+
+    def update_status_reg(self):
+        self.status_reg = 0x20
+        if self.sign_flag:
+            self.status_reg |= 0x80
+        if self.overflow_flag:
+            self.status_reg |= 0x40
+        if self.break_flag:
+            self.status_reg |= 0x10
+        if self.decimal_flag:
+            self.status_reg |= 0x08
+        if self.interrupt_flag:
+            self.status_reg |= 0x04
+        if self.zero_flag:
+            self.status_reg |= 0x02
+        if self.carry_flag:
+            self.status_reg |= 0x01
 
     def reset(self):
         self.status_reg = 0x20
@@ -29,9 +53,26 @@ class CPU():
         self.y_reg=0x0
         print(' -- CPU Reset --')
 
-    def opcode_dbg_prt(self, size, cycle, pc, str):
-        op = self.mem.cpu_mem[pc]
-        print(' >-> S: %d - C: %d - OP: %X @ PC: %X - '%(size, cycle, op, pc) + str)
+    def opcode_dbg_prt(self, size, cycle, name, ext):
+        op = self.mem.cpu_mem[self.program_counter - 1]
+        flag_str = 'Z:%d, N:%d, O:%d, B:%d, D:%d, I:%d, C:%d'%(self.zero_flag, self.sign_flag, self.overflow_flag, self.break_flag, self.decimal_flag, self.interrupt_flag, self.carry_flag)
+        reg_str = 'SS:%X, A:%X, X:%X, Y:%X, SP:%X'%(self.status_reg, self.accumulator, self.x_reg, self.y_reg, self.stack_pointer)
+        if ext == 'NODATA':
+            ass_str = '%s'%(name)
+        elif ext == 'aa':
+            offset = self.sign8(self.mem.cpu_mem[self.program_counter])
+            ass_str = '%s  %4X(%04X + %d)'%(name, (self.program_counter + offset) + 1, self.program_counter + 1, offset)
+        elif ext == 'IM':
+            value = self.mem.cpu_mem[self.program_counter]
+            ass_str = '%s  #%X'%(name, value)
+        elif ext == 'A':
+            addr = (self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter]
+            value = self.mem.cpu_mem[addr]
+            ass_str = '%s  %04X [mem value: %X]'%(name, addr, value)
+        else:
+            ass_str = '%s'%(name)
+        print('[%d] %s --- %s --- Size: %d - Cycle: %d - PC: %X - OP: %X - '%(self.cnt, flag_str, reg_str, size, cycle, self.program_counter - 1, op) + ass_str)
+        self.cnt += 1
 
 # ----- OpCode Functions -----
 # ADC  -  Add to Accumulator with Carry 
@@ -51,9 +92,9 @@ class CPU():
         size = 2
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
+            self.opcode_dbg_prt(size, cycle, name, ext)
         exit()
-        pc += size
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def adc_zp(self, pc, cycle_count): # 0x65
@@ -61,8 +102,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def adc_zpix(self, pc, cycle_count): # 0x75
@@ -70,8 +111,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def adc_a(self, pc, cycle_count): # 0x6D
@@ -79,8 +120,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def adc_aix(self, pc, cycle_count): # 0x7D
@@ -88,8 +129,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def adc_aiy(self, pc, cycle_count): # 0x79
@@ -97,8 +138,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def adc_idi(self, pc, cycle_count): # 0x61
@@ -106,8 +147,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def adc_ini(self, pc, cycle_count): # 0x71
@@ -115,8 +156,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -126,8 +167,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def and_zp(self, pc, cycle_count): # 0x25
@@ -135,8 +176,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def and_zpix(self, pc, cycle_count): # 0x35
@@ -144,8 +185,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def and_a(self, pc, cycle_count): # 0x2D
@@ -153,8 +194,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def and_aix(self, pc, cycle_count): # 0x3D
@@ -162,8 +203,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def and_aiy(self, pc, cycle_count): # 0x39
@@ -171,8 +212,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def and_idi(self, pc, cycle_count): # 0x21
@@ -180,8 +221,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def and_ini(self, pc, cycle_count): # 0x31
@@ -189,8 +230,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -200,8 +241,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def arith_sl_zp(self, pc, cycle_count): # 0x06
@@ -209,8 +250,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def arith_sl_zpix(self, pc, cycle_count): # 0x16
@@ -218,8 +259,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def arith_sl_a(self, pc, cycle_count): # 0x0E
@@ -227,8 +268,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def arith_sl_aix(self, pc, cycle_count): # 0x1E
@@ -236,8 +277,8 @@ class CPU():
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -247,8 +288,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -258,19 +299,25 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
 # BEQ  -  Branch Zero Set 
     def branch_zs(self, pc, cycle_count): # 0xF0
+        br_pc = pc
         op = self.mem.cpu_mem[pc]
-        print('pc: 0x%x, instruction: 0x%x'%(pc, op))
         if self.zero_flag:
             pc += self.mem.cpu_mem[pc + 1] + 1
         else:
-            exit()
+            pc += 1
+
+        dbg_str = "BEQ #%X"%(pc)
+        size = 2
+        cycle = 2
+        if bool(self.debug & self.DBG_OPCODE):
+            self.opcode_dbg_prt(size, cycle, name, ext)
         cycle_count -= 2
         return pc, cycle_count
 
@@ -281,8 +328,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def bit_test_a(self, pc, cycle_count): # 0x2C
@@ -290,8 +337,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -301,8 +348,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -312,16 +359,25 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
 # BPL  -  Branch on Result Plus (or Positive) 
     def branch_rp(self, pc, cycle_count): # 0x10
+        name = 'BPL'
+        ext = 'aa'
+        size = 1
+        cycle = 2
+        if bool(self.debug & self.DBG_OPCODE):
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
+        pc += 1
         if not self.sign_flag:
-            pc += self.mem.cpu_mem[pc + 1] + 1
-        cycle_count -= 2
+            pc += self.sign8(self.mem.cpu_mem[pc - 1])
+
+        cycle_count -= cycle
         return pc, cycle_count
 
 # BRK  -  Force a Break 
@@ -330,8 +386,8 @@ class CPU():
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -341,8 +397,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -352,8 +408,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -363,20 +419,23 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
 # CLD  -  Clear Decimal Mode 
     def clear_dm(self, pc, cycle_count): # 0xD8
-        self.decimal_flag = 0
-        dbg_str = "CLD"
+        name = 'CLD'
+        ext = 'NODATA'
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.decimal_flag = 0
+
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -386,8 +445,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -397,8 +456,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -408,8 +467,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_zp(self, pc, cycle_count): # 0xC5
@@ -417,8 +476,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_zpix(self, pc, cycle_count): # 0xD5
@@ -426,8 +485,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_a(self, pc, cycle_count): # 0xCD
@@ -435,8 +494,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_aix(self, pc, cycle_count): # 0xDD
@@ -444,8 +503,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_aiy(self, pc, cycle_count): # 0xD9
@@ -453,8 +512,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_idi(self, pc, cycle_count): # 0xC1
@@ -462,8 +521,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_ini(self, pc, cycle_count): # 0xD1
@@ -471,8 +530,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -482,8 +541,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_zp(self, pc, cycle_count): # 0xE4
@@ -491,8 +550,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_a(self, pc, cycle_count): # 0xEC
@@ -500,8 +559,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -511,8 +570,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_zp(self, pc, cycle_count): # 0xC4
@@ -520,8 +579,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_a(self, pc, cycle_count): # 0xCC
@@ -529,8 +588,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -540,8 +599,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def decr_mem_zpix(self, pc, cycle_count): # 0xD6
@@ -549,8 +608,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def decr_mem_a(self, pc, cycle_count): # 0xCE
@@ -558,8 +617,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def decr_mem_aix(self, pc, cycle_count): # 0xDE
@@ -567,8 +626,8 @@ class CPU():
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -578,8 +637,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -589,8 +648,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -600,8 +659,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_zp(self, pc, cycle_count): # 0x45
@@ -609,8 +668,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_zpix(self, pc, cycle_count): # 0x55
@@ -618,8 +677,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_a(self, pc, cycle_count): # 0x4D
@@ -627,8 +686,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_aix(self, pc, cycle_count): # 0x5D
@@ -636,8 +695,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_aiy(self, pc, cycle_count): # 0x59
@@ -645,8 +704,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_idi(self, pc, cycle_count): # 0x41
@@ -654,8 +713,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_ini(self, pc, cycle_count): # 0x51
@@ -663,8 +722,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -674,8 +733,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def incr_mem_zpix(self, pc, cycle_count): # 0xF6
@@ -683,8 +742,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def incr_mem_a(self, pc, cycle_count): # 0xEE
@@ -692,8 +751,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def incr_mem_aix(self, pc, cycle_count): # 0xFE
@@ -701,8 +760,8 @@ class CPU():
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -712,8 +771,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -723,8 +782,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -735,8 +794,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def jmp_ai(self, pc, cycle_count): # 0x6c
@@ -744,8 +803,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -755,30 +814,26 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
 # LDA - Load Accumulator with memory 
-    def load_im(self, pc, cycle_count): # 0xA9, 0xA2, 0xA0
-        reg = self.mem.cpu_mem[pc + 1]
-        if self.mem.cpu_mem[pc] == 0xa9:
-            self.accumulator = reg
-            dbg_str = "LDA #%X"%(reg)
-        elif self.mem.cpu_mem[pc] == 0xa2:
-            self.x_reg = reg
-            dbg_str = "LDX #%X"%(reg)
-        elif self.mem.cpu_mem[pc] == 0xa0:
-            self.y_reg = reg
-            dbg_str = "LDY #%X"%(reg)
-        self.sign_flag = bool(reg & 0x80)
-        self.zero_flag = not reg
+    def load_im_a(self, pc, cycle_count): # 0xA9
+        name = 'LDA'
+        ext = 'IM'
         size = 2
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
+        reg = self.mem.cpu_mem[pc]
+        self.accumulator = reg
+        self.sign_flag = bool(reg & 0x80)
+        self.zero_flag = not reg
+
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -787,8 +842,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -797,44 +852,44 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
-    def load_a(self, pc, cycle_count): # 0xAD, 0xAE, 0xAC
-        addr = (self.mem.cpu_mem[pc + 2] << 8) | self.mem.cpu_mem[pc + 1]
-        if self.mem.cpu_mem[pc] == 0xad:
-            reg = self.accumulator
-        elif self.mem.cpu_mem[pc] == 0xae:
-            reg = self.x_reg
-        elif self.mem.cpu_mem[pc] == 0xac:
-            reg = self.y_reg
-        self.mem.cpu_mem[addr] = reg
-        self.sign_flag = bool(reg & 0x80)
-        self.zero_flag = not reg
+    def load_a_a(self, pc, cycle_count): # 0xAD
+        name = 'LDA'
+        ext = 'A'
         size = 3
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
-        cycle_count -= cycle
-        return pc, cycle_count
+            self.opcode_dbg_prt(size, cycle, name, ext)
 
-    def load_aix(self, pc, cycle_count): # 0xBD, 0xBC
-        addr = (self.mem.cpu_mem[pc + 2] << 8) | self.mem.cpu_mem[pc + 1]
+        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
         reg = self.mem.cpu_mem[addr]
-        if self.mem.cpu_mem[pc] == 0xbd:
-            self.accumulator = reg
-        elif self.mem.cpu_mem[pc] == 0xbc:
-            self.y_reg = reg
+        self.accumulator = reg
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
+
+        pc += size - 1
+        cycle_count -= cycle
+        return pc, cycle_count
+
+    def load_aix_a(self, pc, cycle_count): # 0xBD
+        name = 'LDA'
+        ext = 'AIX'
         size = 3
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
+        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        reg = self.mem.cpu_mem[addr]
+        self.accumulator = reg
+        self.sign_flag = bool(reg & 0x80)
+        self.zero_flag = not reg
+
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -843,8 +898,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def load_idi(self, pc, cycle_count): # 0xA1
@@ -852,8 +907,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def load_ini(self, pc, cycle_count): # 0xB1
@@ -861,19 +916,35 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
 # LDX - Load X with Memory 
+    def load_im_x(self, pc, cycle_count): # 0xA2
+        name = 'LDA'
+        ext = 'IM'
+        size = 2
+        cycle = 2
+        if bool(self.debug & self.DBG_OPCODE):
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
+        reg = self.mem.cpu_mem[pc]
+        self.x_reg = reg
+        self.sign_flag = bool(reg & 0x80)
+        self.zero_flag = not reg
+
+        pc += size - 1
+        cycle_count -= cycle
+        return pc, cycle_count
     def load_zp(self, pc, cycle_count): # 0xA6
         exit()
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def load_zpiy(self, pc, cycle_count): # 0xB6
@@ -881,31 +952,64 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
-#    def load_a(self, pc, cycle_count): # 0xAE
+    def load_a_x(self, pc, cycle_count): # 0xAE
+        name = 'LDX'
+        ext = 'A'
+        size = 3
+        cycle = 4
+        if bool(self.debug & self.DBG_OPCODE):
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
+        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        reg = self.x_reg
+        self.mem.cpu_mem[addr] = reg
+        self.sign_flag = bool(reg & 0x80)
+        self.zero_flag = not reg
+
+        pc += size - 1
+        cycle_count -= cycle
+        return pc, cycle_count
 
     def load_aiy(self, pc, cycle_count): # 0xBE
         exit()
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
 # LDY - Load Y with Memory 
+    def load_im_y(self, pc, cycle_count): # 0xA0
+        name = 'LDA'
+        ext = 'IM'
+        size = 2
+        cycle = 2
+        if bool(self.debug & self.DBG_OPCODE):
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
+        reg = self.mem.cpu_mem[pc]
+        self.y_reg = reg
+        self.sign_flag = bool(reg & 0x80)
+        self.zero_flag = not reg
+
+        pc += size - 1
+        cycle_count -= cycle
+        return pc, cycle_count
+
     def load_zp(self, pc, cycle_count): # 0xA4
         exit()
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -914,14 +1018,46 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
-#    def load_a(self, pc, cycle_count): # 0xAC
+    def load_a_y(self, pc, cycle_count): # 0xAC
+        name = 'LDA'
+        ext = 'A'
+        size = 3
+        cycle = 4
+        if bool(self.debug & self.DBG_OPCODE):
+            self.opcode_dbg_prt(size, cycle, name, ext)
 
-#    def load_aix(self, pc, cycle_count): # 0xBC
+        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        reg = self.y_reg
+        self.mem.cpu_mem[addr] = reg
+        self.sign_flag = bool(reg & 0x80)
+        self.zero_flag = not reg
+
+        pc += size - 1
+        cycle_count -= cycle
+        return pc, cycle_count
+
+    def load_aix_y(self, pc, cycle_count): # 0xBC
+        name = 'LDA'
+        ext = 'AIX'
+        size = 3
+        cycle = 4
+        if bool(self.debug & self.DBG_OPCODE):
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
+        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        reg = self.mem.cpu_mem[addr]
+        self.y_reg = reg
+        self.sign_flag = bool(reg & 0x80)
+        self.zero_flag = not reg
+
+        pc += size - 1
+        cycle_count -= cycle
+        return pc, cycle_count
 
 # LSR  -  Logical Shift Right 
     def logic_shift_r_acc(self, pc, cycle_count): # 0x4A
@@ -929,8 +1065,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def logic_shift_r_zp(self, pc, cycle_count): # 0x46
@@ -938,8 +1074,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def logic_shift_r_zpix(self, pc, cycle_count): # 0x56
@@ -947,8 +1083,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def logic_shift_r_a(self, pc, cycle_count): # 0x4E
@@ -956,8 +1092,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def logic_shift_r_aix(self, pc, cycle_count): # 0x5E
@@ -965,8 +1101,8 @@ class CPU():
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -976,8 +1112,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -987,8 +1123,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_zp(self, pc, cycle_count): # 0x05
@@ -996,8 +1132,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_zpix(self, pc, cycle_count): # 0x15
@@ -1005,8 +1141,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_a(self, pc, cycle_count): # 0x0D
@@ -1014,8 +1150,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_aix(self, pc, cycle_count): # 0x1D
@@ -1023,8 +1159,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_aiy(self, pc, cycle_count): # 0x19
@@ -1032,8 +1168,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_idi(self, pc, cycle_count): # 0x01
@@ -1041,8 +1177,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_ini(self, pc, cycle_count): # 0x11
@@ -1050,8 +1186,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1061,8 +1197,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1072,8 +1208,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1083,8 +1219,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1094,8 +1230,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1105,8 +1241,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_left_zp(self, pc, cycle_count): # 0x26
@@ -1114,8 +1250,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_left_zpix(self, pc, cycle_count): # 0x36
@@ -1123,8 +1259,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_left_a(self, pc, cycle_count): # 0x2E
@@ -1132,8 +1268,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_left_aix(self, pc, cycle_count): # 0x3E
@@ -1141,8 +1277,8 @@ class CPU():
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1152,8 +1288,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_right_zp(self, pc, cycle_count): # 0x66
@@ -1161,8 +1297,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_right_zpix(self, pc, cycle_count): # 0x76
@@ -1170,8 +1306,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_right_a(self, pc, cycle_count): # 0x6E
@@ -1179,8 +1315,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_right_aix(self, pc, cycle_count): # 0x7E
@@ -1188,8 +1324,8 @@ class CPU():
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1199,8 +1335,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1210,8 +1346,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1221,8 +1357,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_zp(self, pc, cycle_count): # 0xE5
@@ -1230,8 +1366,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_zpix(self, pc, cycle_count): # 0xF5
@@ -1239,8 +1375,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_a(self, pc, cycle_count): # 0xED
@@ -1248,8 +1384,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_aix(self, pc, cycle_count): # 0xFD
@@ -1257,8 +1393,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_aiy(self, pc, cycle_count): # 0xF9
@@ -1266,8 +1402,8 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_idi(self, pc, cycle_count): # 0xE1
@@ -1275,8 +1411,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_ini(self, pc, cycle_count): # 0xF1
@@ -1284,8 +1420,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1295,8 +1431,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1306,20 +1442,23 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
 # SEI - Set Interrupt Disable 
     def set_int_dis(self, pc, cycle_count): # 0x78
-        self.interrupt_flag = 1
-        dbg_str = "SEI"
+        name = 'SEI'
+        ext = "NODATA"
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.interrupt_flag = 1
+
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1329,8 +1468,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def store_zpix(self, pc, cycle_count): # 0x95
@@ -1338,34 +1477,33 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
-    def store_a(self, pc, cycle_count): # 0x8D, 0x8E, 0x8C
-        addr = (self.mem.cpu_mem[pc + 2] << 8) | self.mem.cpu_mem[pc + 1]
-        if self.mem.cpu_mem[pc] == 0x8d:
-            reg = self.accumulator
-            dbg_str = "LDA #%X"%(reg)
-        elif self.mem.cpu_mem[pc] == 0x8e:
-            reg = self.x_reg
-        elif self.mem.cpu_mem[pc] == 0x8c:
-            self.mem.cpu_mem[addr] = self.y_reg
-        self.mem.cpu_mem[addr] = reg
+    def store_a_a(self, pc, cycle_count): # 0x8D, 0x8E, 0x8C
+        name = 'STA'
+        ext = 'A'
         size = 3
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
+        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        reg = self.accumulator
+        self.mem.cpu_mem[addr] = reg
+
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
+
     def store_aix(self, pc, cycle_count): # 0x9D
         exit()
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def store_aiy(self, pc, cycle_count): # 0x99
@@ -1373,8 +1511,8 @@ class CPU():
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def store_idi(self, pc, cycle_count): # 0x81
@@ -1382,8 +1520,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def store_ini(self, pc, cycle_count): # 0x91
@@ -1391,8 +1529,8 @@ class CPU():
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1402,8 +1540,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def store_zpiy(self, pc, cycle_count): # 0x96
@@ -1411,11 +1549,25 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
-#    def store_a(self, pc, cycle_count): # 0x8E
+    def store_a_x(self, pc, cycle_count): # 0x8E
+        name = 'STA'
+        ext = 'A'
+        size = 3
+        cycle = 4
+        if bool(self.debug & self.DBG_OPCODE):
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
+        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        reg = self.x_reg
+        self.mem.cpu_mem[addr] = reg
+
+        pc += size - 1
+        cycle_count -= cycle
+        return pc, cycle_count
 
 # STY - Store Y in Memory 
     def store_zp(self, pc, cycle_count): # 0x84
@@ -1423,8 +1575,8 @@ class CPU():
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def store_zpix(self, pc, cycle_count): # 0x94
@@ -1432,11 +1584,25 @@ class CPU():
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
-#    def store_a(self, pc, cycle_count): # 0x8C
+    def store_a_y(self, pc, cycle_count): # 0x8C
+        name = 'STA'
+        ext = 'A'
+        size = 3
+        cycle = 4
+        if bool(self.debug & self.DBG_OPCODE):
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
+        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        reg = self.y_reg
+        self.mem.cpu_mem[addr] = reg
+
+        pc += size - 1
+        cycle_count -= cycle
+        return pc, cycle_count
 
 # TAX  -  Transfer Accumulator to X 
     def transfer_reg(self, pc, cycle_count): # 0xAA
@@ -1444,8 +1610,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1455,8 +1621,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1466,8 +1632,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1477,22 +1643,26 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
 # TXS  -  Transfer X to Stack 
     def transfer_stack_to(self, pc, cycle_count): # 0x9A
+        name = 'TXS'
+        ext = 'NODATA'
+        size = 1
+        cycle = 2
+        if bool(self.debug & self.DBG_OPCODE):
+            self.opcode_dbg_prt(size, cycle, name, ext)
+
         reg = self.x_reg
         self.stack_pointer = reg + 100
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
-        size = 1
-        cycle = 2
-        if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1502,8 +1672,8 @@ class CPU():
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
-            self.opcode_dbg_prt(size, cycle, pc, dbg_str)
-        pc += size
+            self.opcode_dbg_prt(size, cycle, name, ext)
+        pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
@@ -1587,9 +1757,9 @@ class CPU():
             0x86: store_zp,
             0x88: decr,
             0x8a: transfer_reg,
-            0x8c: store_a,
-            0x8d: store_a,
-            0x8e: store_a,
+            0x8c: store_a_y,
+            0x8d: store_a_a,
+            0x8e: store_a_x,
             0x90: branch_cc,
             0x91: store_ini,
             0x94: store_zpix,
@@ -1599,18 +1769,18 @@ class CPU():
             0x99: store_aiy,
             0x9a: transfer_stack_to,
             0x9d: store_aix,
-            0xa0: load_im,
+            0xa0: load_im_y,
             0xa1: load_idi,
-            0xa2: load_im,
+            0xa2: load_im_x,
             0xa4: load_zp,
             0xa5: load_zp,
             0xa6: load_zp,
             0xa8: transfer_reg,
-            0xa9: load_im,
+            0xa9: load_im_a,
             0xaa: transfer_reg,
-            0xac: load_a,
-            0xad: load_a,
-            0xae: load_a,
+            0xac: load_a_y,
+            0xad: load_a_a,
+            0xae: load_a_x,
             0xb0: branch_cs,
             0xb1: load_ini,
             0xb4: load_zpix,
@@ -1619,8 +1789,8 @@ class CPU():
             0xb8: clear_of,
             0xb9: load_aiy,
             0xba: transfer_stack_from,
-            0xbc: load_aix,
-            0xbd: load_aix,
+            0xbc: load_aix_y,
+            0xbd: load_aix_a,
             0xbe: load_aiy,
             0xc0: comp_mem_im,
             0xc1: comp_mem_idi,
@@ -1663,15 +1833,14 @@ class CPU():
             }
 
     def execute(self, cycle_count = 1):
-        pc = self.program_counter
         while(cycle_count > 0):
-            op = self.mem.cpu_mem[pc]
-            print(' -- CPU Execute -- cnt: %d, pc: 0x%x, instruction: 0x%x'%(cycle_count, pc, op))
+            self.update_status_reg()
+            op = self.mem.cpu_mem[self.program_counter]
+            self.program_counter += 1
+            print(' -- CPU Execute -- cnt: %d, pc: 0x%x, instruction: 0x%x'%(cycle_count, self.program_counter, op))
             if (op in self.opcode):
-                pc, cycle_count = self.opcode[op](self, pc, cycle_count)
+                self.program_counter, cycle_count = self.opcode[op](self, self.program_counter, cycle_count)
             else:
-                pc += 1
                 cycle_count -= 1
                 print(' ### OpCode 0x%x is not supported'%(op))
-        self.program_counter = pc
 
