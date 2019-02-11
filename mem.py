@@ -92,23 +92,23 @@ class MEMORY():
             self.nes.mem.cpu_mem[addr] = 0x48
             return
         # APU Sound Registers
-        if address > 0x3fff and address < 0x4016:
+        if addr > 0x3fff and addr < 0x4016:
             self.cpu_mem[addr] = value
             return
 
         # SRAM Registers
-        if address > 0x5fff and address < 0x8000:
+        if addr > 0x5fff and addr < 0x8000:
             if self.nes.rom.SRAM == 1:
                 self.nes.write_sav()
             self.cpu_mem[addr] = value
             return
 
         # RAM registers
-        if address < 0x2000:
-            self.nes.mem.cpu_mem[addr] = vale
-            self.nes.mem.cpu_mem[addr + 2048] = vale # mirror of 0-800
-            self.nes.mem.cpu_mem[addr + 4096] = vale # mirror of 0-800
-            self.nes.mem.cpu_mem[addr + 6144] = vale # mirror of 0-800
+        if addr < 0x2000:
+            self.nes.mem.cpu_mem[addr] = value
+            self.nes.mem.cpu_mem[addr + 2048] = value # mirror of 0-800
+            self.nes.mem.cpu_mem[addr + 4096] = value # mirror of 0-800
+            self.nes.mem.cpu_mem[addr + 6144] = value # mirror of 0-800
             return
 
         if self.nes.rom.MAPPER == 1:
@@ -127,7 +127,7 @@ class MEMORY():
             self.nes.mappers.mmc3_access(addr, value)
             return
 
-        self.nes.mem.cpu_mem[addr] = vale
+        self.nes.mem.cpu_mem[addr] = value
 
     def read(self, addr):
         # this is ram or rom so we can return the address
@@ -158,16 +158,16 @@ class MEMORY():
             return self.nes.mem.ppu_mem[tmp]
 
         # APU data (sound)
-        if address == 0x4015:
+        if addr == 0x4015:
             return self.cpu_mem[addr]
 
         # joypad1 data
-        if address == 0x4016:
+        if addr == 0x4016:
             self.cpu_mem[addr] = self.nes.in_put.pads[self.nes.in_put.readcnt]
             self.nes.in_put.readcnt += 1
             return self.cpu_mem[addr]
 
-        if address == 0x4017:
+        if addr == 0x4017:
             return self.cpu_mem[addr]
 
         return self.cpu_mem[addr]
