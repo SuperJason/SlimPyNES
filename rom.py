@@ -6,9 +6,10 @@ import time
 import numpy as np
 
 class ROM:
-    def __init__(self):
-        self.PRG = 0;
-        self.CHR = 0;
+    def __init__(self, nes):
+        self.nes = nes
+        self.PRG = 0
+        self.CHR = 0
         self.MAPPER = 0
         self.MIRRORING = 0
         self.SRAM = 0
@@ -49,7 +50,7 @@ class ROM:
         rom_file.close()
 
         return True
-        
+
     def load(self, rom_file_name, mem):
         rom_file = open(rom_file_name, 'rb')
         self.romcache = rom_file.read()

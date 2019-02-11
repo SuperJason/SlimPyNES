@@ -7,8 +7,9 @@ import numpy as np
 
 class CPU():
     DBG_OPCODE = 0x01
-    def __init__(self, mem):
-        self.mem = mem
+    def __init__(self, nes):
+        self.nes = nes
+        self.mem = nes.mem
         self.debug = self.DBG_OPCODE 
         self.cnt = 0
 
@@ -56,21 +57,54 @@ class CPU():
     def opcode_dbg_prt(self, size, cycle, name, ext):
         op = self.mem.cpu_mem[self.program_counter - 1]
         flag_str = 'Z:%d, N:%d, O:%d, B:%d, D:%d, I:%d, C:%d'%(self.zero_flag, self.sign_flag, self.overflow_flag, self.break_flag, self.decimal_flag, self.interrupt_flag, self.carry_flag)
-        reg_str = 'SS:%X, A:%X, X:%X, Y:%X, SP:%X'%(self.status_reg, self.accumulator, self.x_reg, self.y_reg, self.stack_pointer)
+        reg_str = 'SS:%X, A:%X, X:%X, Y:%X, SP:%04X'%(self.status_reg, self.accumulator, self.x_reg, self.y_reg, self.stack_pointer + 0x100)
         if ext == 'NODATA':
+            ass_str = '%s'%(name)
+        elif ext == 'ACC':
             ass_str = '%s'%(name)
         elif ext == 'aa':
             offset = self.sign8(self.mem.cpu_mem[self.program_counter])
             ass_str = '%s  %4X(%04X + %d)'%(name, (self.program_counter + offset) + 1, self.program_counter + 1, offset)
         elif ext == 'IM':
-            value = self.mem.cpu_mem[self.program_counter]
-            ass_str = '%s  #%X'%(name, value)
+            addr = self.mem.cpu_mem[self.program_counter]
+            ass_str = '%s  #%X'%(name, addr)
+        elif ext == 'ZP':
+            addr = self.mem.cpu_mem[self.program_counter]
+            value = self.mem.cpu_mem[addr]
+            ass_str = '%s  #%X [mem value: %X]'%(name, addr, value)
+        elif ext == 'ZPIX':
+            addr = self.mem.cpu_mem[self.program_counter] + self.x_reg
+            value = self.mem.cpu_mem[addr]
+            ass_str = '%s  #%X [mem value: %X]'%(name, addr, value)
+        elif ext == 'ZPIY':
+            addr = self.mem.cpu_mem[self.program_counter] + self.y_reg
+            value = self.mem.cpu_mem[addr]
+            ass_str = '%s  #%X [mem value: %X]'%(name, addr, value)
         elif ext == 'A':
             addr = (self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter]
             value = self.mem.cpu_mem[addr]
             ass_str = '%s  %04X [mem value: %X]'%(name, addr, value)
+        elif ext == 'AI':
+            addr = (self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter]
+            ass_str = '%s  (%04X)'%(name, addr)
+        elif ext == 'AIX':
+            addr = (self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter]
+            value = self.mem.cpu_mem[addr + self.x_reg]
+            ass_str = '%s  %04X X [mem value: %X]'%(name, addr, value)
+        elif ext == 'AIY':
+            addr = (self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter]
+            value = self.mem.cpu_mem[addr + self.y_reg]
+            ass_str = '%s  %04X X [mem value: %X]'%(name, addr, value)
+        elif ext == 'IDI':
+            addr = self.mem.cpu_mem[self.program_counter] + self.x_reg
+            value = (self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr]
+            ass_str = '%s  (%04X, X) [mem location: %X]'%(name, addr, value)
+        elif ext == 'INI':
+            addr = self.mem.cpu_mem[self.program_counter] + self.y_reg
+            value = (self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr]
+            ass_str = '%s  (%04X, X) [mem location: %X]'%(name, addr, value)
         else:
-            ass_str = '%s'%(name)
+            ass_str = '%s, which is unknown'%(name)
         print('[%d] %s --- %s --- Size: %d - Cycle: %d - PC: %X - OP: %X - '%(self.cnt, flag_str, reg_str, size, cycle, self.program_counter - 1, op) + ass_str)
         self.cnt += 1
 
@@ -93,12 +127,18 @@ class CPU():
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def adc_zp(self, pc, cycle_count): # 0x65
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -107,7 +147,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def adc_zpix(self, pc, cycle_count): # 0x75
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -116,7 +159,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def adc_a(self, pc, cycle_count): # 0x6D
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -125,7 +171,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def adc_aix(self, pc, cycle_count): # 0x7D
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -134,7 +183,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def adc_aiy(self, pc, cycle_count): # 0x79
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -143,7 +195,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def adc_idi(self, pc, cycle_count): # 0x61
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -152,7 +207,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def adc_ini(self, pc, cycle_count): # 0x71
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -163,7 +221,10 @@ class CPU():
 
 # AND  -  AND Memory with Accumulator 
     def and_im(self, pc, cycle_count): # 0x29
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -172,7 +233,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def and_zp(self, pc, cycle_count): # 0x25
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -181,7 +245,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def and_zpix(self, pc, cycle_count): # 0x35
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -190,7 +257,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def and_a(self, pc, cycle_count): # 0x2D
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -199,7 +269,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def and_aix(self, pc, cycle_count): # 0x3D
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -208,7 +281,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def and_aiy(self, pc, cycle_count): # 0x39
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -217,7 +293,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def and_idi(self, pc, cycle_count): # 0x21
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -226,7 +305,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def and_ini(self, pc, cycle_count): # 0x31
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -237,7 +319,10 @@ class CPU():
 
 # ASL  -  Arithmatic Shift Left 
     def arith_sl_acc(self, pc, cycle_count): # 0x0A
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -246,7 +331,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def arith_sl_zp(self, pc, cycle_count): # 0x06
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -255,7 +343,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def arith_sl_zpix(self, pc, cycle_count): # 0x16
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -264,7 +355,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def arith_sl_a(self, pc, cycle_count): # 0x0E
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -273,7 +367,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def arith_sl_aix(self, pc, cycle_count): # 0x1E
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
@@ -284,7 +381,10 @@ class CPU():
 
 # BCC  -  Branch on Carry Clear 
     def branch_cc(self, pc, cycle_count): # 0x90
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -295,7 +395,10 @@ class CPU():
 
 # BCS  -  Branch on Carry Set 
     def branch_cs(self, pc, cycle_count): # 0xB0
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -324,7 +427,10 @@ class CPU():
 # note: bit moet 5 instr zijn ipv 2? 
 # BIT  -  Test Bits in Memory with Accumulator 
     def bit_test_zp(self, pc, cycle_count): # 0x24
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -333,7 +439,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def bit_test_a(self, pc, cycle_count): # 0x2C
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -344,7 +453,10 @@ class CPU():
 
 # BMI  -  Branch on Result Minus 
     def branch_rm(self, pc, cycle_count): # 0x30
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -355,7 +467,10 @@ class CPU():
 
 # BNE  -  Branch on Z reset 
     def branch_zr(self, pc, cycle_count): # 0xD0
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -382,7 +497,10 @@ class CPU():
 
 # BRK  -  Force a Break 
     def brk(self, pc, cycle_count): # 0x00
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
@@ -393,7 +511,10 @@ class CPU():
 
 # BVC  -  Branch on Overflow Clear 
     def branch_oc(self, pc, cycle_count): # 0x50
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -404,7 +525,10 @@ class CPU():
 
 # BVS  -  Branch on Overflow Set 
     def branch_os(self, pc, cycle_count): # 0x70
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -415,7 +539,10 @@ class CPU():
 
 # CLC  -  Clear Carry Flag 
     def clear_cf(self, pc, cycle_count): # 0x18
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -441,7 +568,10 @@ class CPU():
 
 # CLI  -  Clear Interrupt Disable 
     def clear_id(self, pc, cycle_count): # 0x58
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -452,7 +582,10 @@ class CPU():
 
 # CLV  -  Clear Overflow Flag 
     def clear_of(self, pc, cycle_count): # 0xB8
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -463,7 +596,10 @@ class CPU():
 
 # CMP  -  Compare Memory and Accumulator 
     def comp_mem_im(self, pc, cycle_count): # 0xC9
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -472,7 +608,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_zp(self, pc, cycle_count): # 0xC5
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -481,7 +620,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_zpix(self, pc, cycle_count): # 0xD5
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -490,7 +632,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_a(self, pc, cycle_count): # 0xCD
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -499,7 +644,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_aix(self, pc, cycle_count): # 0xDD
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -508,7 +656,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_aiy(self, pc, cycle_count): # 0xD9
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -517,7 +668,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_idi(self, pc, cycle_count): # 0xC1
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -526,7 +680,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_ini(self, pc, cycle_count): # 0xD1
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -537,7 +694,10 @@ class CPU():
 
 # CPX  -  Compare Memory and X register 
     def comp_mem_im(self, pc, cycle_count): # 0xE0
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -546,7 +706,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_zp(self, pc, cycle_count): # 0xE4
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -555,7 +718,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_a(self, pc, cycle_count): # 0xEC
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -566,7 +732,10 @@ class CPU():
 
 # CPY  -  Compare Memory and Y register 
     def comp_mem_im(self, pc, cycle_count): # 0xC0
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -575,7 +744,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_zp(self, pc, cycle_count): # 0xC4
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -584,7 +756,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_a(self, pc, cycle_count): # 0xCC
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -595,7 +770,10 @@ class CPU():
 
 # DEC  -  Decrement Memory by One 
     def decr_mem_zp(self, pc, cycle_count): # 0xC6
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -604,7 +782,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def decr_mem_zpix(self, pc, cycle_count): # 0xD6
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -613,7 +794,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def decr_mem_a(self, pc, cycle_count): # 0xCE
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -622,7 +806,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def decr_mem_aix(self, pc, cycle_count): # 0xDE
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
@@ -633,7 +820,10 @@ class CPU():
 
 # DEX  -  Decrement X 
     def decr(self, pc, cycle_count): # 0xCA
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -644,7 +834,10 @@ class CPU():
 
 # DEY  -  Decrement Y 
     def decr(self, pc, cycle_count): # 0x88
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -655,7 +848,10 @@ class CPU():
 
 # EOR  -  Exclusive-OR Memory with Accumulator 
     def excl_or_mem_im(self, pc, cycle_count): # 0x49
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -664,7 +860,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_zp(self, pc, cycle_count): # 0x45
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -673,7 +872,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_zpix(self, pc, cycle_count): # 0x55
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -682,7 +884,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_a(self, pc, cycle_count): # 0x4D
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -691,7 +896,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_aix(self, pc, cycle_count): # 0x5D
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -700,7 +908,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_aiy(self, pc, cycle_count): # 0x59
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -709,7 +920,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_idi(self, pc, cycle_count): # 0x41
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -718,7 +932,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def excl_or_mem_ini(self, pc, cycle_count): # 0x51
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -729,7 +946,10 @@ class CPU():
 
 # INC  -  Increment Memory by one 
     def incr_mem_zp(self, pc, cycle_count): # 0xE6
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -738,7 +958,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def incr_mem_zpix(self, pc, cycle_count): # 0xF6
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -747,7 +970,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def incr_mem_a(self, pc, cycle_count): # 0xEE
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -756,7 +982,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def incr_mem_aix(self, pc, cycle_count): # 0xFE
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
@@ -767,7 +996,10 @@ class CPU():
 
 # INX  -  Increment X by one 
     def incr(self, pc, cycle_count): # 0xE8
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -778,7 +1010,10 @@ class CPU():
 
 # INY  -  Increment Y by one 
     def incr(self, pc, cycle_count): # 0xC8
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -790,7 +1025,10 @@ class CPU():
 # mis nog 1 JMP instructie 
 # JMP - Jump 
     def jmp_a(self, pc, cycle_count): # 0x4c
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -799,7 +1037,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def jmp_ai(self, pc, cycle_count): # 0x6c
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -810,7 +1051,10 @@ class CPU():
 
 # JSR - Jump to subroutine 
     def jsr(self, pc, cycle_count): # 0x20
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -829,7 +1073,7 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         reg = self.mem.cpu_mem[pc]
-        self.accumulator = reg
+        self.accumulator = reg & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
 
@@ -838,7 +1082,10 @@ class CPU():
         return pc, cycle_count
 
     def load_zp(self, pc, cycle_count): # 0xA5
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -848,7 +1095,10 @@ class CPU():
         return pc, cycle_count
 
     def load_zpix(self, pc, cycle_count): # 0xB5
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -866,8 +1116,8 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        reg = self.mem.cpu_mem[addr]
-        self.accumulator = reg
+        reg = self.mem.read(addr)
+        self.accumulator = reg & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
 
@@ -884,8 +1134,8 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        reg = self.mem.cpu_mem[addr]
-        self.accumulator = reg
+        reg = self.mem.read(addr)
+        self.accumulator = reg & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
 
@@ -894,7 +1144,10 @@ class CPU():
         return pc, cycle_count
 
     def load_aiy(self, pc, cycle_count): # 0xB9
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -903,7 +1156,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def load_idi(self, pc, cycle_count): # 0xA1
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -912,7 +1168,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def load_ini(self, pc, cycle_count): # 0xB1
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -931,7 +1190,7 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         reg = self.mem.cpu_mem[pc]
-        self.x_reg = reg
+        self.x_reg = reg & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
 
@@ -939,7 +1198,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def load_zp(self, pc, cycle_count): # 0xA6
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -948,7 +1210,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def load_zpiy(self, pc, cycle_count): # 0xB6
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -966,8 +1231,8 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        reg = self.x_reg
-        self.mem.cpu_mem[addr] = reg
+        reg = nes.mem.read(addr)
+        self.x_reg = reg & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
 
@@ -976,7 +1241,10 @@ class CPU():
         return pc, cycle_count
 
     def load_aiy(self, pc, cycle_count): # 0xBE
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -995,7 +1263,7 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         reg = self.mem.cpu_mem[pc]
-        self.y_reg = reg
+        self.y_reg = reg & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
 
@@ -1004,7 +1272,10 @@ class CPU():
         return pc, cycle_count
 
     def load_zp(self, pc, cycle_count): # 0xA4
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -1014,7 +1285,10 @@ class CPU():
         return pc, cycle_count
 
     def load_zpix(self, pc, cycle_count): # 0xB4
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1050,8 +1324,8 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        reg = self.mem.cpu_mem[addr]
-        self.y_reg = reg
+        reg = self.mem.read(addr)
+        self.y_reg = reg & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
 
@@ -1061,7 +1335,10 @@ class CPU():
 
 # LSR  -  Logical Shift Right 
     def logic_shift_r_acc(self, pc, cycle_count): # 0x4A
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1070,7 +1347,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def logic_shift_r_zp(self, pc, cycle_count): # 0x46
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -1079,7 +1359,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def logic_shift_r_zpix(self, pc, cycle_count): # 0x56
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -1088,7 +1371,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def logic_shift_r_a(self, pc, cycle_count): # 0x4E
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -1097,7 +1383,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def logic_shift_r_aix(self, pc, cycle_count): # 0x5E
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
@@ -1108,7 +1397,10 @@ class CPU():
 
 # NOP - No Operation (79 instructies?) 
     def nop(self, pc, cycle_count): # 0xEA
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1119,7 +1411,10 @@ class CPU():
 
 # ORA  -  OR Memory with Accumulator 
     def or_mem_im(self, pc, cycle_count): # 0x09
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1128,7 +1423,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_zp(self, pc, cycle_count): # 0x05
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -1137,7 +1435,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_zpix(self, pc, cycle_count): # 0x15
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1146,7 +1447,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_a(self, pc, cycle_count): # 0x0D
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1155,7 +1459,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_aix(self, pc, cycle_count): # 0x1D
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -1164,7 +1471,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_aiy(self, pc, cycle_count): # 0x19
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1173,7 +1483,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_idi(self, pc, cycle_count): # 0x01
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -1182,7 +1495,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_ini(self, pc, cycle_count): # 0x11
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -1193,7 +1509,10 @@ class CPU():
 
 # PHA  -  Push Accumulator on Stack 
     def push_a(self, pc, cycle_count): # 0x48
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -1204,7 +1523,10 @@ class CPU():
 
 # PHP  -  Push Processor Status on Stack 
     def push_ps(self, pc, cycle_count): # 0x08
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -1215,7 +1537,10 @@ class CPU():
 
 # PLA  -  Pull Accumulator from Stack 
     def pull_a(self, pc, cycle_count): # 0x68
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1226,7 +1551,10 @@ class CPU():
 
 # PLP  -  Pull Processor Status from Stack 
     def pull_ps(self, pc, cycle_count): # 0x28
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1237,7 +1565,10 @@ class CPU():
 
 # ROL  -  Rotate Left 
     def rotate_left_acc(self, pc, cycle_count): # 0x2A
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1246,7 +1577,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_left_zp(self, pc, cycle_count): # 0x26
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -1255,7 +1589,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_left_zpix(self, pc, cycle_count): # 0x36
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -1264,7 +1601,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_left_a(self, pc, cycle_count): # 0x2E
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -1273,7 +1613,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_left_aix(self, pc, cycle_count): # 0x3E
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
@@ -1284,7 +1627,10 @@ class CPU():
 
 # ROR  -  Rotate Right 
     def rotate_right_acc(self, pc, cycle_count): # 0x6A
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1293,7 +1639,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_right_zp(self, pc, cycle_count): # 0x66
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -1302,7 +1651,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_right_zpix(self, pc, cycle_count): # 0x76
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -1311,7 +1663,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_right_a(self, pc, cycle_count): # 0x6E
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -1320,7 +1675,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def rotate_right_aix(self, pc, cycle_count): # 0x7E
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
@@ -1331,7 +1689,10 @@ class CPU():
 
 # RTI  -  Return from Interrupt 
     def ret_int(self, pc, cycle_count): # 0x40
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1342,7 +1703,10 @@ class CPU():
 
 # RTS  -  Return from Subroutine 
     def ret_sub(self, pc, cycle_count): # 0x60
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1353,7 +1717,10 @@ class CPU():
 
 # SBC  -  Subtract from Accumulator with Carry (IDI_ZP?) 
     def sub_acc_im(self, pc, cycle_count): # 0xE9
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1362,7 +1729,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_zp(self, pc, cycle_count): # 0xE5
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -1371,7 +1741,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_zpix(self, pc, cycle_count): # 0xF5
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1380,7 +1753,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_a(self, pc, cycle_count): # 0xED
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1389,7 +1765,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_aix(self, pc, cycle_count): # 0xFD
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -1398,7 +1777,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_aiy(self, pc, cycle_count): # 0xF9
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1407,7 +1789,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_idi(self, pc, cycle_count): # 0xE1
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -1416,7 +1801,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def sub_acc_ini(self, pc, cycle_count): # 0xF1
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -1427,7 +1815,10 @@ class CPU():
 
 # SEC  -  Set Carry Flag 
     def set_c_flag(self, pc, cycle_count): # 0x38
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1438,7 +1829,10 @@ class CPU():
 
 # SED  -  Set Decimal Mode 
     def set_d_mode(self, pc, cycle_count): # 0xF8
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1464,7 +1858,10 @@ class CPU():
 
 # STA - Store Accumulator in Memory (IDI_ZP?) 
     def store_zp(self, pc, cycle_count): # 0x85
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -1473,7 +1870,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def store_zpix(self, pc, cycle_count): # 0x95
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1481,7 +1881,7 @@ class CPU():
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
-    def store_a_a(self, pc, cycle_count): # 0x8D, 0x8E, 0x8C
+    def store_a_a(self, pc, cycle_count): # 0x8D
         name = 'STA'
         ext = 'A'
         size = 3
@@ -1491,14 +1891,17 @@ class CPU():
 
         addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
         reg = self.accumulator
-        self.mem.cpu_mem[addr] = reg
+        self.mem.write(addr, reg)
 
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
 
     def store_aix(self, pc, cycle_count): # 0x9D
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -1507,7 +1910,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def store_aiy(self, pc, cycle_count): # 0x99
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
@@ -1516,7 +1922,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def store_idi(self, pc, cycle_count): # 0x81
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -1525,7 +1934,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def store_ini(self, pc, cycle_count): # 0x91
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
@@ -1536,7 +1948,10 @@ class CPU():
 
 # STX - Store X in Memory 
     def store_zp(self, pc, cycle_count): # 0x86
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -1545,7 +1960,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def store_zpiy(self, pc, cycle_count): # 0x96
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1563,7 +1981,7 @@ class CPU():
 
         addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
         reg = self.x_reg
-        self.mem.cpu_mem[addr] = reg
+        self.mem.write(addr, reg)
 
         pc += size - 1
         cycle_count -= cycle
@@ -1571,7 +1989,10 @@ class CPU():
 
 # STY - Store Y in Memory 
     def store_zp(self, pc, cycle_count): # 0x84
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
@@ -1580,7 +2001,10 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def store_zpix(self, pc, cycle_count): # 0x94
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
@@ -1598,7 +2022,7 @@ class CPU():
 
         addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
         reg = self.y_reg
-        self.mem.cpu_mem[addr] = reg
+        self.mem.write(addr, reg)
 
         pc += size - 1
         cycle_count -= cycle
@@ -1606,7 +2030,10 @@ class CPU():
 
 # TAX  -  Transfer Accumulator to X 
     def transfer_reg(self, pc, cycle_count): # 0xAA
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1617,7 +2044,10 @@ class CPU():
 
 # TAY  -  Transfer Accumulator to Y 
     def transfer_reg(self, pc, cycle_count): # 0xA8
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1628,7 +2058,10 @@ class CPU():
 
 # TSX  -  Transfer Stack to X 
     def transfer_stack_from(self, pc, cycle_count): # 0xBA
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1639,7 +2072,10 @@ class CPU():
 
 # TXA  -  Transfer X to Accumulator 
     def transfer_reg(self, pc, cycle_count): # 0x8A
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1658,7 +2094,7 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         reg = self.x_reg
-        self.stack_pointer = reg + 100
+        self.stack_pointer = (reg + 0x100) & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
 
@@ -1668,7 +2104,10 @@ class CPU():
 
 # TYA  -  Transfer Y to Accumulator 
     def transfer_reg(self, pc, cycle_count): # 0x98
+        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter))
         exit()
+        name = ''
+        ext = ''
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1837,7 +2276,7 @@ class CPU():
             self.update_status_reg()
             op = self.mem.cpu_mem[self.program_counter]
             self.program_counter += 1
-            print(' -- CPU Execute -- cnt: %d, pc: 0x%x, instruction: 0x%x'%(cycle_count, self.program_counter, op))
+            #print(' -- CPU Execute -- cnt: %d, pc: 0x%x, instruction: 0x%x'%(cycle_count, self.program_counter, op))
             if (op in self.opcode):
                 self.program_counter, cycle_count = self.opcode[op](self, self.program_counter, cycle_count)
             else:
