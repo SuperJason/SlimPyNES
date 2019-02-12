@@ -624,18 +624,9 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         addr = self.mem.cpu_mem[pc]
-        if self.sign8(self.accumulator) > self.sign8(addr):
-            self.carry_flag = 1
-            self.sign_flag = 0
-            self.zero_flag = 0
-        elif self.sign8(self.accumulator) < self.sign8(addr):
-            self.carry_flag = 0
-            self.sign_flag = 1
-            self.zero_flag = 0
-        elif self.sign8(self.accumulator) == self.sign8(addr):
-            self.carry_flag = 1
-            self.sign_flag = 0
-            self.zero_flag = 1
+        self.carry_flag = bool(self.sign8(self.accumulator) >= self.sign8(addr))
+        self.sign_flag = bool(self.sign8(self.accumulator) < self.sign8(addr))
+        self.zero_flag = bool(self.sign8(self.accumulator) == self.sign8(addr))
 
         pc += size - 1
         cycle_count -= cycle
@@ -727,7 +718,7 @@ class CPU():
 
 # CPX  -  Compare Memory and X register
     def comp_mem_im_x(self, pc, cycle_count): # 0xE0
-        name = 'CMP'
+        name = 'CPX'
         ext = 'IM'
         size = 2
         cycle = 2
@@ -735,18 +726,9 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         addr = self.mem.cpu_mem[pc]
-        if self.sign8(self.x_reg) > self.sign8(addr):
-            self.carry_flag = 1
-            self.sign_flag = 0
-            self.zero_flag = 0
-        elif self.sign8(self.accumulator) < self.sign8(addr):
-            self.carry_flag = 0
-            self.sign_flag = 1
-            self.zero_flag = 0
-        elif self.sign8(self.accumulator) == self.sign8(addr):
-            self.carry_flag = 1
-            self.sign_flag = 0
-            self.zero_flag = 1
+        self.carry_flag = bool(self.sign8(self.x_reg) >= self.sign8(addr))
+        self.sign_flag = bool(self.sign8(self.x_reg) < self.sign8(addr))
+        self.zero_flag = bool(self.sign8(self.x_reg) == self.sign8(addr))
 
         pc += size - 1
         cycle_count -= cycle
@@ -778,7 +760,7 @@ class CPU():
 
 # CPY  -  Compare Memory and Y register
     def comp_mem_im_y(self, pc, cycle_count): # 0xC0
-        name = 'CMP'
+        name = 'CPY'
         ext = 'IM'
         size = 2
         cycle = 2
@@ -786,18 +768,9 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         addr = self.mem.cpu_mem[pc]
-        if self.sign8(self.y_reg) > self.sign8(addr):
-            self.carry_flag = 1
-            self.sign_flag = 0
-            self.zero_flag = 0
-        elif self.sign8(self.accumulator) < self.sign8(addr):
-            self.carry_flag = 0
-            self.sign_flag = 1
-            self.zero_flag = 0
-        elif self.sign8(self.accumulator) == self.sign8(addr):
-            self.carry_flag = 1
-            self.sign_flag = 0
-            self.zero_flag = 1
+        self.carry_flag = bool(self.sign8(self.y_reg) >= self.sign8(addr))
+        self.sign_flag = bool(self.sign8(self.y_reg) < self.sign8(addr))
+        self.zero_flag = bool(self.sign8(self.y_reg) == self.sign8(addr))
 
         pc += size - 1
         cycle_count -= cycle
@@ -886,7 +859,7 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        self.x_reg -= 1
+        self.x_reg = (self.x_reg - 1) & 0xff
         self.sign_flag = bool(self.x_reg & 0x80)
         self.zero_flag= not bool(self.x_reg)
 
@@ -903,7 +876,7 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        self.x_reg -= 1
+        self.y_reg = (self.y_reg - 1) & 0xff
         self.sign_flag = bool(self.y_reg & 0x80)
         self.zero_flag= not bool(self.y_reg)
 
@@ -2010,11 +1983,8 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        print(' ### DBG ### addr: %x'%(self.mem.cpu_mem[pc]))
         addr = self.mem.cpu_mem[pc]
-        print(' ### DBG ### location: %x'%((self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr]))
         tmp = ((self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr]) + self.y_reg
-        print(' ### DBG ### tmp: %x'%(tmp))
         self.mem.write(tmp, self.accumulator)
 
         pc += size - 1
@@ -2031,7 +2001,7 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         addr = self.mem.cpu_mem[self.program_counter]
-        self.mem.write(addr, self.y_reg)
+        self.mem.write(addr, self.x_reg)
 
         pc += size - 1
         cycle_count -= cycle
@@ -2058,8 +2028,7 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        reg = self.x_reg
-        self.mem.write(addr, reg)
+        self.mem.write(addr, self.x_reg)
 
         pc += size - 1
         cycle_count -= cycle
@@ -2101,8 +2070,7 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        reg = self.y_reg
-        self.mem.write(addr, reg)
+        self.mem.write(addr, self.y_reg)
 
         pc += size - 1
         cycle_count -= cycle
