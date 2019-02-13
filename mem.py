@@ -21,49 +21,122 @@ class MEMORY():
             self.nes.ppu.addr_tmp = value
             self.nes.ppu.control1 = value
             self.cpu_mem[addr] = value
-            self.nes.ppu.loopyT &= 0xf3ff
-            self.nes.ppu.loopyT |= (value & 3) << 10
+            self.nes.ppu.loopyT &= 0xf3ff # (0000110000000000)
+            self.nes.ppu.loopyT |= (value & 3) << 10 # (00000011)
             return
-        #TODO
+
         if addr == 0x2001:
-            print(" ### ppu_write() Not impliment yet, addr: 0x%x, value: 0x%x"%(addr, value))
-            exit()
+            self.nes.ppu.addr_tmp = value
+            self.nes.ppu.control2 = value
+            self.cpu_mem[addr] = value
             return
 
         # sprite_memory address register
         if addr == 0x2003:
-            print(" ### ppu_write() Not impliment yet, addr: 0x%x, value: 0x%x"%(addr, value))
-            exit()
+            self.nes.ppu.addr_tmp = value
+            self.nes.ppu.sprite_address = value
+            self.cpu_mem[addr] = value
             return
 
         # sprite_memory i/o register
         if addr == 0x2004:
-            print(" ### ppu_write() Not impliment yet, addr: 0x%x, value: 0x%x"%(addr, value))
-            exit()
+            self.nes.ppu.addr_tmp = value
+            self.sprite_mem[self.ppu.sprite_address] = value
+            self.ppu.sprite_address += 1
+            self.cpu_mem[addr] = value
             return
 
         # vram address register #1 (scrolling)
         if addr == 0x2005:
-            print(" ### ppu_write() Not impliment yet, addr: 0x%x, value: 0x%x"%(addr, value))
-            exit()
-            return
+            self.nes.ppu.addr_tmp = value
+
+            if self.nes.ppu.bgscr_f == 0:
+                self.nes.ppu.loopyT &= 0xffe0 # (0000000000011111)
+                self.nes.ppu.loopyT |= (value & 0xf8) >> 3 # (11111000)
+                self.nes.ppu.loopyX = value & 0x07 # (00000111)
+
+                self.nes.ppu.bgscr_f = 1
+                self.cpu_mem[addr] = value
+                return
+
+            if self.nes.ppu.bgscr_f == 1:
+                self.nes.ppu.loopyT &= 0xfc1f # (0000001111100000)
+                self.nes.ppu.loopyT |= (value & 0xf8) << 2 # (0111000000000000)
+                self.nes.ppu.loopyT &= 0x8fff # (11111000)
+                self.nes.ppu.loopyT |= (value & 0x07) << 12 # (00000111)
+
+                self.nes.ppu.bgscr_f = 0
+                self.cpu_mem[addr] = value
+                return
 
         # vram address register #2
         if addr == 0x2006:
-            print(" ### ppu_write() Not impliment yet, addr: 0x%x, value: 0x%x"%(addr, value))
-            exit()
-            return
+            self.nes.ppu.addr_tmp = value
+
+            # First write -> Store the high byte 6 bits and clear out the last two
+            if self.nes.ppu.addr_h == 0:
+                self.nes.ppu.addr = value << 8
+                self.nes.ppu.loopyT &= 0x00ff # (0011111100000000)
+                self.nes.ppu.loopyT |= (value & 0x3f) << 8 # (1100000000000000) (00111111)
+
+                self.nes.ppu.addr_h = 1
+                self.cpu_mem[addr] = value
+                return
+
+            # Second write -> Store the low byte 8 bits
+            if self.nes.ppu.addr_h == 1:
+                self.nes.ppu.addr |= value
+                self.nes.ppu.loopyT &= 0x00ff # (0000000011111111)
+                self.nes.ppu.loopyT |= value # (11111111)
+                self.nes.ppu.loopyV = self.nes.ppu.loopyT # v=t
+
+                self.nes.ppu.addr_h = 0
+                self.cpu_mem[addr] = value
+                return
 
         # vram i/o register
         if addr == 0x2007:
-            print(" ### ppu_write() Not impliment yet, addr: 0x%x, value: 0x%x"%(addr, value))
-            exit()
+            # if the vram_write_flag is on, vram writes should ignored
+            if self.nes.ppu.vram_write_flag():
+                return
+
+            self.nes.ppu.addr_tmp = value
+            self.ppu_mem[addr] = value
+
+            # nametable mirroring
+            if self.nes.ppu.addr > 0x1999 and self.nes.ppu.addr < 0x3000:
+                if self.nes.rom.OS_MIRROR == 1:
+                    self.ppu_mem[self.nes.ppu.addr + 0x400] = value
+                    self.ppu_mem[self.nes.ppu.addr + 0x800] = value
+                    self.ppu_mem[self.nes.ppu.addr + 0x1200] = value
+                elif self.nes.rom.FS_MIRROR == 1:
+                    print('FS_MIRRORING detected! do nothing')
+                else:
+                    if self.nes.rom.MIRRORING == 0:
+                        # horizontal
+                        self.ppu_mem[self.nes.ppu.addr + 0x400] = value
+                    else:
+                        # vertical
+                        self.ppu_mem[self.nes.ppu.addr + 0x800] = value
+
+            # palette mirror
+            if self.nes.ppu.addr == 0x3f10:
+                self.ppu_mem[0x3f00] = value
+
+            self.nes.ppu.addr_tmp = self.nes.ppu.addr
+
+            if not self.nes.ppu.increment_32():
+                self.nes.ppu.addr += 1
+            else:
+                self.nes.ppu.addr += 0x20
+
+            self.cpu_mem[addr] = value
             return
 
         # transfer 256 bytes of memory into sprite_memory
         if addr == 0x4014:
-            print(" ### ppu_write() Not impliment yet, addr: 0x%x, value: 0x%x"%(addr, value))
-            exit()
+            for i in range(0, 255):
+                self.sprite_mem[i] = self.cpu_mem[0x100 * value + i]
             return
 
     def write(self, addr, value):

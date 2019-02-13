@@ -11,10 +11,13 @@ class ROM:
         self.PRG = 0
         self.CHR = 0
         self.MAPPER = 0
-        self.MIRRORING = 0
-        self.SRAM = 0
-        self.TRAINER = 0
+
+        self.RCB = 0
+        self.OS_MIRROR = 0
         self.FS_MIRROR = 0
+        self.TRAINER = 0
+        self.SRAM = 0
+        self.MIRRORING = 0
 
     def headercheck(self, file_name):
         rom_file = open(file_name, 'rb')

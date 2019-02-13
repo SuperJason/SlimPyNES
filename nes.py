@@ -6,46 +6,7 @@ import time
 from rom import ROM 
 from mem import MEMORY
 from cpu import CPU
-
-class PPU():
-    def __init__(self, mem):
-        self.mem = mem
-
-        self.status = 0
-        self.status_tmp = 0
-
-        # used to flip between first and second write (0x2005)
-        self.bgscr_f = 0
-
-        # used to flip between first and second write (0x2006)
-        self.ppu_addr_h = 0
-
-        self.addr = 0x2000
-        self.addr_tmp = 0x2000
-
-        # ppu control registers
-        self.control_1 = 0
-        self.control_2 = 0
-
-        # used for scrolling techniques
-        self.loopyT = 0
-        self.loopyV = 0
-        self.loopyX = 0
-
-    # memory[0x2000]
-    def exec_nmi_on_vblank(self):
-        return self.control_1 & 0x80 # 1 = Generate VBlank NMI
-    def sprite_16(self):
-        return self.control_1 & 0x20 # 1 = Sprites 8x16/8x8
-    def background_addr_hi(self):
-        return self.control_1 & 0x10 # 1 = BG pattern adr $0000/$1000
-    def sprite_addr_hi(self):
-        return self.control_1 & 0x08 # 1 = Sprite pattern adr $0000/$1000
-    def increment_32(self):
-        return self.control_1 & 0x04 # 1 = auto increment 1/32
-
-    def reset(self):
-        print(' -- PPU Reset --')
+from ppu import PPU
 
 class INPUT():
     def __init__(self, nes):
