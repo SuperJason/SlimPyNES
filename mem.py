@@ -74,22 +74,22 @@ class MEMORY():
 
         # PPU Video Memory area
         if addr > 0x1fff and addr < 0x4000:
-            self.nes.mem.ppu_write(addr, value)
+            self.ppu_write(addr, value)
             return
 
         # Sprite DMA Register
         if addr == 0x4014:
-            self.nes.mem.ppu_write(addr, value)
+            self.ppu_write(addr, value)
             return
 
         # Joypad 1
         if addr == 0x4016:
-            self.nes.mem.cpu_mem[addr] = 0x40
+            self.cpu_mem[addr] = 0x40
             return
 
         # Joypad 2
         if addr == 0x4017:
-            self.nes.mem.cpu_mem[addr] = 0x48
+            self.cpu_mem[addr] = 0x48
             return
         # APU Sound Registers
         if addr > 0x3fff and addr < 0x4016:
@@ -105,10 +105,10 @@ class MEMORY():
 
         # RAM registers
         if addr < 0x2000:
-            self.nes.mem.cpu_mem[addr] = value
-            self.nes.mem.cpu_mem[addr + 2048] = value # mirror of 0-800
-            self.nes.mem.cpu_mem[addr + 4096] = value # mirror of 0-800
-            self.nes.mem.cpu_mem[addr + 6144] = value # mirror of 0-800
+            self.cpu_mem[addr] = value
+            self.cpu_mem[addr + 2048] = value # mirror of 0-800
+            self.cpu_mem[addr + 4096] = value # mirror of 0-800
+            self.cpu_mem[addr + 6144] = value # mirror of 0-800
             return
 
         if self.nes.rom.MAPPER == 1:
@@ -127,7 +127,7 @@ class MEMORY():
             self.nes.mappers.mmc3_access(addr, value)
             return
 
-        self.nes.mem.cpu_mem[addr] = value
+        self.cpu_mem[addr] = value
 
     def read(self, addr):
         # this is ram or rom so we can return the address
@@ -155,7 +155,7 @@ class MEMORY():
             else:
                 self.nes.ppu.addr += 0x20
 
-            return self.nes.mem.ppu_mem[tmp]
+            return self.ppu_mem[tmp]
 
         # APU data (sound)
         if addr == 0x4015:

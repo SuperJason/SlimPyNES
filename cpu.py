@@ -7,11 +7,12 @@ import numpy as np
 
 class CPU():
     DBG_OPCODE = 0x01
+    DBG_NMI = 0x02
     def __init__(self, nes):
         self.nes = nes
         self.mem = nes.mem
-        self.debug = self.DBG_OPCODE
-        self.cnt = 0
+        self.debug = self.DBG_OPCODE | self.DBG_NMI
+        self.dbg_cnt = 0
         self.addr = 0
 
     def sign8(self, data):
@@ -20,13 +21,43 @@ class CPU():
             ret -= 256
         return ret
 
+    # Stack Push
     def push(self, data):
         self.mem.write(self.stack_pointer + 0x100, data)
         self.stack_pointer -= 1
 
+    # Stack Pull
     def pull(self):
         self.stack_pointer += 1
         self.addr = self.mem.read(self.stack_pointer + 0x100)
+
+    # Get the cpu flags
+    def get_sr(self):
+        if self.sign_flag:
+            flags |= 0x80
+        if self.overflow_flag:
+            flags |= 0x40
+        if self.break_flag:
+            flags |= 0x10
+        if self.decimal_flag:
+            flags |= 0x08
+        if self.interrupt_flag:
+            flags |= 0x04
+        if self.zero_flag:
+            flags |= 0x02
+        if self.carry_flag:
+            flags |= 0x01
+        return flags
+
+    # Set the cpu flags
+    def set_sr(self, flags):
+        self.sign_flag = bool(flags & 0x80)
+        self.overflow_flag = bool(flags & 0x40)
+        self.break_flag = bool(flags & 0x10)
+        self.decimal_flag = bool(flags & 0x08)
+        self.interrupt_flag = bool(flags & 0x04)
+        self.zero_flag = bool(flags & 0x02)
+        self.carry_flag = bool(flags & 0x01)
 
     def update_status_reg(self):
         self.status_reg = 0x20
@@ -66,63 +97,64 @@ class CPU():
     def opcode_dbg_prt(self, size, cycle, name, ext):
         op = self.mem.cpu_mem[self.program_counter - 1]
         flag_str = 'Z:%d, N:%d, O:%d, B:%d, D:%d, I:%d, C:%d'%(self.zero_flag, self.sign_flag, self.overflow_flag, self.break_flag, self.decimal_flag, self.interrupt_flag, self.carry_flag)
-        reg_str = 'SS:%X, A:%X, X:%X, Y:%X, SP:%04X'%(self.status_reg, self.accumulator, self.x_reg, self.y_reg, self.stack_pointer + 0x100)
+        reg_str = 'A:%x, P:%x, X:%x, Y:%x, S:0x%04x, addr:%x'%(self.accumulator, self.status_reg, self.x_reg, self.y_reg, self.stack_pointer + 0x100, self.addr)
         if ext == 'NODATA':
-            ass_str = '%s'%(name)
+            ass_str = ''
         elif ext == 'ACC':
-            ass_str = '%s'%(name)
+            ass_str = ''
         elif ext == 'aa':
             offset = self.sign8(self.mem.cpu_mem[self.program_counter])
-            ass_str = '%s  %4X(%04X + %d)'%(name, (self.program_counter + offset) + 1, self.program_counter + 1, offset)
+            ass_str = '\t%x (%x + %d)'%((self.program_counter + offset) + 1, self.program_counter + 1, offset)
         elif ext == 'IM':
             addr = self.mem.cpu_mem[self.program_counter]
-            ass_str = '%s  #%X'%(name, addr)
+            ass_str = '\t#%x'%(addr)
         elif ext == 'ZP':
             addr = self.mem.cpu_mem[self.program_counter]
             value = self.mem.cpu_mem[addr]
-            ass_str = '%s  #%X [mem value: %X]'%(name, addr, value)
+            ass_str = '\t%x [mem value: %x]'%(addr, value)
         elif ext == 'ZPIX':
             addr = self.mem.cpu_mem[self.program_counter] + self.x_reg
             value = self.mem.cpu_mem[addr]
-            ass_str = '%s  #%X [mem value: %X]'%(name, addr, value)
+            ass_str = '\t%x [mem value: %x]'%(addr, value)
         elif ext == 'ZPIY':
             addr = self.mem.cpu_mem[self.program_counter] + self.y_reg
             value = self.mem.cpu_mem[addr]
-            ass_str = '%s  #%X [mem value: %X]'%(name, addr, value)
+            ass_str = '\t#%x [mem value: %x]'%(addr, value)
         elif ext == 'A':
             addr = (self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter]
             value = self.mem.cpu_mem[addr]
-            ass_str = '%s  %04X [mem value: %X]'%(name, addr, value)
+            ass_str = '\t%x [mem value: %x]'%(addr, value)
         elif ext == 'AI':
             addr = (self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter]
-            ass_str = '%s  (%04X)'%(name, addr)
+            ass_str = '\t(%x)'%(addr)
         elif ext == 'AIX':
             addr = (self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter]
             value = self.mem.cpu_mem[addr + self.x_reg]
-            ass_str = '%s  %04X X [mem value: %X]'%(name, addr, value)
+            ass_str = '\t%0x, X [mem value: %x]'%(addr, value)
         elif ext == 'AIY':
             addr = (self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter]
             value = self.mem.cpu_mem[addr + self.y_reg]
-            ass_str = '%s  %04X X [mem value: %X]'%(name, addr, value)
+            ass_str = '\t%0x, X [mem value: %x]'%(addr, value)
         elif ext == 'IDI':
             addr = self.mem.cpu_mem[self.program_counter] + self.x_reg
             value = (self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr]
-            ass_str = '%s  (%04X, X) [mem location: %X]'%(name, addr, value)
+            ass_str = '\t(%x, X) [mem location: %x]'%(addr, value)
         elif ext == 'INI':
             addr = self.mem.cpu_mem[self.program_counter]
             value = (self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr] + self.y_reg
-            ass_str = '%s  (%04X) Y [mem location: %X]'%(name, addr, value)
+            ass_str = '\t(%x), Y [mem location: %x]'%(addr, value)
         else:
-            ass_str = '%s, which is unknown'%(name)
-        print('[%d] %s --- %s --- Size: %d - Cycle: %d - PC: %X - OP: %X - '%(self.cnt, flag_str, reg_str, size, cycle, self.program_counter - 1, op) + ass_str)
-        self.cnt += 1
+            ass_str = '\twhich is unknown'
+        print('[%d] %s'%(self.dbg_cnt - 1, reg_str))
+        print('[%d] %s'%(self.dbg_cnt - 1, flag_str))
+        print('[%d] executing instruction at offset 0x%x: [0x%x - %s]'%(self.dbg_cnt - 1, self.program_counter - 1, op, name) + ass_str)
 
 # ----- OpCode Functions -----
 # ADC  -  Add to Accumulator with Carry
     def adc_im(self, pc, cycle_count): # 0x69
-        addr = self.mem.cpu_mem[pc + 1]
-        tmp = addr + self.accumulator + self.carry_flag
-        self.overflow_flag = bool((~(self.accumulator ^ addr)) & (self.accumulator ^ addr) & 0x80)
+        self.addr = self.mem.cpu_mem[pc + 1]
+        tmp = self.addr + self.accumulator + self.carry_flag
+        self.overflow_flag = bool((~(self.accumulator ^ self.addr)) & (self.accumulator ^ self.addr) & 0x80)
         if tmp > 0xff:
             self.carry_flag = bool(1)
         else:
@@ -623,10 +655,10 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = self.mem.cpu_mem[pc]
-        self.carry_flag = bool(self.sign8(self.accumulator) >= self.sign8(addr))
-        self.sign_flag = bool(self.sign8(self.accumulator) < self.sign8(addr))
-        self.zero_flag = bool(self.sign8(self.accumulator) == self.sign8(addr))
+        self.addr = self.mem.cpu_mem[pc]
+        self.carry_flag = bool(self.accumulator >= self.addr)
+        self.sign_flag = bool(self.sign8(self.accumulator) < self.sign8(self.addr))
+        self.zero_flag = bool(self.accumulator == self.addr)
 
         pc += size - 1
         cycle_count -= cycle
@@ -725,10 +757,10 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = self.mem.cpu_mem[pc]
-        self.carry_flag = bool(self.sign8(self.x_reg) >= self.sign8(addr))
-        self.sign_flag = bool(self.sign8(self.x_reg) < self.sign8(addr))
-        self.zero_flag = bool(self.sign8(self.x_reg) == self.sign8(addr))
+        self.addr = self.mem.cpu_mem[pc]
+        self.carry_flag = bool(self.x_reg >= self.addr)
+        self.sign_flag = bool(self.sign8(self.x_reg) < self.sign8(self.addr))
+        self.zero_flag = bool(self.x_reg == self.addr)
 
         pc += size - 1
         cycle_count -= cycle
@@ -767,10 +799,10 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = self.mem.cpu_mem[pc]
-        self.carry_flag = bool(self.sign8(self.y_reg) >= self.sign8(addr))
-        self.sign_flag = bool(self.sign8(self.y_reg) < self.sign8(addr))
-        self.zero_flag = bool(self.sign8(self.y_reg) == self.sign8(addr))
+        self.addr = self.mem.cpu_mem[pc]
+        self.carry_flag = bool(self.y_reg >= self.addr)
+        self.sign_flag = bool(self.sign8(self.y_reg) < self.sign8(self.addr))
+        self.zero_flag = bool(self.y_reg == self.addr)
 
         pc += size - 1
         cycle_count -= cycle
@@ -1096,7 +1128,6 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        print(" ### DBG ### pc: %x"%(pc))
         self.push((pc + 1) >> 8)
         self.push(pc + 1)
         pc = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
@@ -1156,8 +1187,8 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        reg = self.mem.read(addr)
+        self.addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        reg = self.mem.read(self.addr)
         self.accumulator = reg & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
@@ -1174,8 +1205,8 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        reg = self.mem.read(addr)
+        self.addr = ((self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]) + self.x_reg
+        reg = self.mem.read(self.addr)
         self.accumulator = reg & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
@@ -1223,7 +1254,7 @@ class CPU():
 
 # LDX - Load X with Memory
     def load_im_x(self, pc, cycle_count): # 0xA2
-        name = 'LDA'
+        name = 'LDX'
         ext = 'IM'
         size = 2
         cycle = 2
@@ -1271,8 +1302,8 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        reg = nes.mem.read(addr)
+        self.addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        reg = nes.mem.read(self.addr)
         self.x_reg = reg & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
@@ -1296,7 +1327,7 @@ class CPU():
 
 # LDY - Load Y with Memory
     def load_im_y(self, pc, cycle_count): # 0xA0
-        name = 'LDA'
+        name = 'LDY'
         ext = 'IM'
         size = 2
         cycle = 2
@@ -1346,9 +1377,9 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        self.addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
         reg = self.y_reg
-        self.mem.cpu_mem[addr] = reg
+        self.mem.cpu_mem[self.addr] = reg
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
 
@@ -1364,8 +1395,8 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        reg = self.mem.read(addr)
+        self.addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        reg = self.mem.read(self.addr)
         self.y_reg = reg & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
@@ -1751,11 +1782,12 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
+        #print(" ### DBG ### sp: 0x%x, stack: 0x%x, 0x%x"%(self.stack_pointer, self.mem.cpu_mem[self.stack_pointer + 0x100 + 1], self.mem.cpu_mem[self.stack_pointer + 0x100 + 2]))
         self.pull()
         pc = self.addr + 1 
         self.pull()
         pc += (self.addr << 8)
-        print(" ### DBG ### pc: %x"%(pc))
+        #print(" ### DBG ### pc: %x"%(pc))
 
         cycle_count -= cycle
         return pc, cycle_count
@@ -1910,8 +1942,8 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = self.mem.cpu_mem[self.program_counter]
-        self.mem.write(addr, self.accumulator)
+        self.addr = self.mem.cpu_mem[self.program_counter]
+        self.mem.write(self.addr, self.accumulator)
 
         pc += size - 1
         cycle_count -= cycle
@@ -1936,9 +1968,9 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        self.addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
         reg = self.accumulator
-        self.mem.write(addr, reg)
+        self.mem.write(self.addr, reg)
 
         pc += size - 1
         cycle_count -= cycle
@@ -1988,8 +2020,8 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = self.mem.cpu_mem[pc]
-        tmp = ((self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr]) + self.y_reg
+        self.addr = self.mem.cpu_mem[pc]
+        tmp = ((self.mem.cpu_mem[self.addr + 1] << 8) | self.mem.cpu_mem[self.addr]) + self.y_reg
         self.mem.write(tmp, self.accumulator)
 
         pc += size - 1
@@ -2005,8 +2037,8 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = self.mem.cpu_mem[self.program_counter]
-        self.mem.write(addr, self.x_reg)
+        self.addr = self.mem.cpu_mem[self.program_counter]
+        self.mem.write(self.addr, self.x_reg)
 
         pc += size - 1
         cycle_count -= cycle
@@ -2032,8 +2064,8 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        self.mem.write(addr, self.x_reg)
+        self.addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        self.mem.write(self.addr, self.x_reg)
 
         pc += size - 1
         cycle_count -= cycle
@@ -2048,8 +2080,8 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = self.mem.cpu_mem[self.program_counter]
-        self.mem.write(addr, self.y_reg)
+        self.addr = self.mem.cpu_mem[self.program_counter]
+        self.mem.write(self.addr, self.y_reg)
 
         pc += size - 1
         cycle_count -= cycle
@@ -2074,8 +2106,8 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        self.mem.write(addr, self.y_reg)
+        self.addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        self.mem.write(self.addr, self.y_reg)
 
         pc += size - 1
         cycle_count -= cycle
@@ -2324,8 +2356,23 @@ class CPU():
             0xfe: incr_mem_aix,
             }
 
-    def execute(self, cycle_count = 1):
+    def nmi(self, cycles = 7):
+        if bool(self.debug & self.DBG_NMI):
+            print('[%d] executing NMI routine'%(self.dbg_cnt - 1))
+
+        cpu.push((self.program_counter & 0xff00) >> 8)
+        cpu.push(self.program_counter & 0xff)
+        cpu.push(self.get_sr())
+        self.break_flag = False
+        self.interrupt_flag = True
+        self.program_counter = (self.mem.cpu_mem[0xfffb] << 8) | self.mem.cpu_mem[0xfffa]
+
+        return cycles - 7
+
+    def execute(self, cycles = 1):
+        cycle_count = cycles
         while(cycle_count > 0):
+            self.dbg_cnt += 1
             self.update_status_reg()
             op = self.mem.cpu_mem[self.program_counter]
             self.program_counter += 1
@@ -2336,4 +2383,6 @@ class CPU():
                 cycle_count -= 1
                 print(' ### OpCode 0x%x @ 0x%xis not supported!!!'%(op, self.program_counter))
                 exit()
+
+        return cycles - cycle_count
 

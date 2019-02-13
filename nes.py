@@ -33,15 +33,15 @@ class PPU():
         self.loopyX = 0
 
     # memory[0x2000]
-    def exec_nmi_on_vblank():
+    def exec_nmi_on_vblank(self):
         return self.control_1 & 0x80 # 1 = Generate VBlank NMI
-    def sprite_16():
+    def sprite_16(self):
         return self.control_1 & 0x20 # 1 = Sprites 8x16/8x8
-    def background_addr_hi():
+    def background_addr_hi(self):
         return self.control_1 & 0x10 # 1 = BG pattern adr $0000/$1000
-    def sprite_addr_hi():
+    def sprite_addr_hi(self):
         return self.control_1 & 0x08 # 1 = Sprite pattern adr $0000/$1000
-    def increment_32():
+    def increment_32(self):
         return self.control_1 & 0x04 # 1 = auto increment 1/32
 
     def reset(self):
@@ -75,6 +75,18 @@ class INPUT():
             self.pads[i] = 0x40
 
 class NES():
+    # cpu speed
+    PAL_SPEED = 1773447
+
+    # vblank int
+    PAL_VBLANK_INT = PAL_SPEED / 50
+
+    # scanline refresh (hblank)
+    PAL_SCANLINE_REFRESH = PAL_VBLANK_INT / 313
+
+    # vblank int cycle timeout
+    PAL_VBLANK_CYCLE_TIMEOUT = (313 - 240) * PAL_VBLANK_INT / 313
+
     def __init__(self, cpu=None, ppu=None, mem=None, rom=None, in_put=None):
         self.cpu = cpu
         self.ppu = ppu
@@ -83,6 +95,40 @@ class NES():
         self.in_put = in_put
         # PAL
         self.start_init = 341
+        self.vblank_init = self.PAL_VBLANK_INT
+        self.vblank_cycle_timeout = self.PAL_VBLANK_CYCLE_TIMEOUT
+        self.scanline_refresh = self.PAL_SCANLINE_REFRESH
+
+    def start(self):
+        counter = 0
+        print(' -- NES Emulator Stating... --')
+
+        self.cpu_is_running = 1
+        while(self.cpu_is_running):
+            print(' -- NES CPU Loop Start --')
+            cpu.execute(nes.start_init)
+            # Set ppu status bit7 to 1 and enter vblank
+            ppu.status = 0x80
+            mem.cpu_mem[0x2002] = ppu.status
+            counter += cpu.execute(12)
+            #self.cpu_is_running -= 1
+            if self.ppu.exec_nmi_on_vblank():
+                counter += cpu.nmi(counter);
+
+            counter += cpu.execute(self.vblank_cycle_timeout)
+
+            # vblank ends (ppu status bit7) is set to 0, sprite_zero (ppu status bit6) is set to 0
+            ppu.status &= 0x3f
+
+            # and write to mem
+            mem.write(0x2002, ppu.status)
+
+            ppu.loopyV = ppu.loopyT
+
+            for scanline in range(0, 240):
+                counter += cpu.execute(self.scanline_refresh)
+
+            time.sleep(0.01)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
@@ -112,14 +158,4 @@ if __name__ == '__main__':
     nes.in_put = in_put
     in_put.reset()
 
-    print(' -- NES Emulator Stating... --')
-
-    cpu_is_running = 1
-    while(cpu_is_running):
-        cpu.execute(nes.start_init)
-        time.sleep(0.01)
-        # Set ppu status bit7 to 1 and enter vblank
-        ppu.status = 0x80
-        mem.cpu_mem[0x2002] = ppu.status
-        cpu.execute(12)
-        #cpu_is_running -= 1
+    nes.start()
