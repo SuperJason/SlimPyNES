@@ -218,7 +218,7 @@ class MEMORY():
             # reset VRAM Address Register #2
             self.nes.ppu.addr_h = 0x00
             # return bits 7-4 of unmodifyed ppu_status with bits 3-0 of the ppu_addr_tmp
-            return (self.nes.ppu.status_tmp & 0xe0) | (self.nes.ppu.status_tmp & 0x1f)
+            return (self.nes.ppu.status_tmp & 0xe0) | (self.nes.ppu.addr_tmp & 0x1f)
 
         if addr == 0x2007:
             tmp = self.nes.ppu.addr_tmp
