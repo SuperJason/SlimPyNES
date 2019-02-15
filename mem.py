@@ -41,8 +41,8 @@ class MEMORY():
         # sprite_memory i/o register
         if addr == 0x2004:
             self.nes.ppu.addr_tmp = value
-            self.sprite_mem[self.ppu.sprite_address] = value
-            self.ppu.sprite_address += 1
+            self.sprite_mem[self.nes.ppu.sprite_address] = value
+            self.nes.ppu.sprite_address += 1
             self.cpu_mem[addr] = value
             return
 
