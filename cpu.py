@@ -270,14 +270,17 @@ class CPU():
 
 # AND  -  AND Memory with Accumulator
     def and_im(self, pc, cycle_count): # 0x29
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'AND'
+        ext = 'IM'
+        size = 2
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.accumulator &= self.mem.cpu_mem[pc]
+        self.sign_flag = bool(self.accumulator & 0x80)
+        self.zero_flag = not bool(self.accumulator)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -1541,7 +1544,6 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         self.accumulator |= self.mem.cpu_mem[pc]
-        pc += 1
         self.sign_flag = bool(self.accumulator & 0x80)
         self.zero_flag = not bool(self.accumulator)
 

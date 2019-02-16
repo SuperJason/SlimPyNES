@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import numpy as np
+
 class PPU():
-    def __init__(self, mem):
-        self.mem = mem
+    def __init__(self, nes):
+        self.mem = nes.mem
+        self.nes = nes
+
+        # gfx cache -> [hor] [ver]
+        self.bgcache = np.zeros((256 + 8) * (256 + 8), dtype=np.uint8).reshape(256 + 8, 256 + 8)
+        self.sprcache = np.zeros((256 + 8) * (256 + 8), dtype=np.uint8).reshape(256 + 8, 256 + 8)
 
         self.status = 0
         self.status_tmp = 0
@@ -27,6 +34,9 @@ class PPU():
         self.loopyX = 0
 
         self.sprite_address = 0
+
+        # used to export the current scanline for the debugger
+        self.current_scanline = 0
 
     # memory[0x2000]
     def exec_nmi_on_vblank(self):
@@ -65,3 +75,401 @@ class PPU():
     def reset(self):
         print(' -- PPU Reset --')
 
+    def render_background(self, scanline):
+        bit1 = np.zeros(8, np.uint8)
+        bit2 = np.zeros(8, np.uint8)
+        tile = np.zeros(8, np.uint8)
+
+        self.current_scanline = scanline
+
+        # loopy scanline start -> v:0000010000011111=t:0000010000011111 | v=t
+        self.loopyV &= 0xfbe0
+        self.loopyV |= (self.loopyT & 0x041f)
+
+        x_scroll = (self.loopyV & 0x1f)
+        y_scroll = (self.loopyV & 0x03e0) >> 5
+
+        nt_addr = 0x2000 + (self.loopyV & 0x0fff)
+        at_addr = 0x2000 + (self.loopyV & 0x0c00) + 0x03c0 + ((y_scroll & 0xfffc) << 1) + (x_scroll >> 2)
+
+        if (y_scroll & 0x0002) == 0:
+            if (x_scroll & 0x0002) == 0:
+                attribs = (self.nes.mem.ppu_mem[at_addr] & 0x03) << 2
+            else:
+                attribs = (self.nes.mem.ppu_mem[at_addr] & 0x0C)
+        else:
+            if (x_scroll & 0x0002) == 0:
+                attribs = (self.nes.mem.ppu_mem[at_addr] & 0x30) << 2
+            else:
+                attribs = (self.nes.mem.ppu_mem[at_addr] & 0xC0) >> 4
+
+        # draw 33 tiles in a scanline (32 + 1 for scrolling)
+        for tile_count in range(33):
+            # nt_data (ppu_memory[nt_addr]) * 16 = pattern table address
+            pt_addr = (self.nes.mem.ppu_mem[nt_addr] << 4) + ((self.loopyV & 0x7000) >> 12)
+
+            # check if the pattern address needs to be high
+            if self.background_addr_hi():
+                pt_addr += 0x1000
+
+            # fetch bits from pattern table
+            for i in range(7)[::-1]:
+                bit1[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr] >> i) & 0x01)
+                bit1[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr + 8] >> i) & 0x01)
+
+            # merge bits
+            for i in range(7):
+                if (bit1[i] == 0) and (bit2[i] == 0):
+                    tile[i] = 0
+                elif (bit1[i] == 1) and (bit2[i] == 0):
+                    tile[i] = 1
+                elif (bit1[i] == 0) and (bit2[i] == 1):
+                    tile[i] = 2
+                elif (bit1[i] == 1) and (bit2[i] == 1):
+                    tile[i] = 3
+
+            # merge colour
+            for i in range(7)[::-1]:
+                # pixel transparency check
+                if tile[7 - i] != 0:
+                    tile[7 -i] += attribs
+
+            if (tile_count == 0) and (self.loopyX != 0):
+                for i in range(8 - self.loopyX):
+                    # cache pixel
+                    self.bgcache[(tile_count << 3) + i][scanline] = tile[self.loopyX + i]
+
+                    # draw pixel
+                    if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                        if self.scale > 1:
+                            for s_y in range(scale - 1):
+                                for s_x in range(scale - 1):
+                                    disp_x = (x + i) * self.scale + s_x
+                                    disp_y = (y + j) * self.scale + s_y
+                                    disp_color = ppu_memory[0x3f10 + (tile[i][j])]
+                                    self.nes.disp.set_pixel(disp_x, disp_y, color)
+                        else:
+                            disp_x = x + i
+                            disp_y = y + j
+                            disp_color = ppu_memory[0x3f10 + (tile[i][j])]
+            elif (tile_count == 32) and (self.loopyX != 0):
+                for i in range(self.loopyX):
+                    # cache pixel
+                    self.bgcache[(tile_count << 3) + i - loopyX][scanline] = tile[i]
+
+                    # draw pixel
+                    if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                        if self.scale > 1:
+                            for s_y in range(scale - 1):
+                                for s_x in range(scale - 1):
+                                    disp_x = (x + i) * self.scale + s_x
+                                    disp_y = (y + j) * self.scale + s_y
+                                    disp_color = ppu_memory[0x3f10 + (tile[i][j])]
+                                    self.nes.disp.set_pixel(disp_x, disp_y, color)
+                        else:
+                            disp_x = x + i
+                            disp_y = y + j
+                            disp_color = ppu_memory[0x3f10 + (tile[i][j])]
+            else:
+                for i in range(7):
+                    # cache pixel
+                    self.bgcache[(tile_count << 3) + i - self.loopyX][scanline] = tile[i]
+
+                    # draw pixel
+                    if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                        if self.scale > 1:
+                            for s_y in range(scale - 1):
+                                for s_x in range(scale - 1):
+                                    disp_x = (x + i) * self.scale + s_x
+                                    disp_y = (y + j) * self.scale + s_y
+                                    disp_color = ppu_memory[0x3f10 + (tile[i][j])]
+                                    self.nes.disp.set_pixel(disp_x, disp_y, color)
+                        else:
+                            disp_x = x + i
+                            disp_y = y + j
+                            disp_color = ppu_memory[0x3f10 + (tile[i][j])]
+
+            nt_addr += 1
+            x_scroll += 1
+
+            # boundary check
+            # dual-tile
+            if (x_scroll & 0x0001) == 0:
+                # quad-tile
+                if (x_scroll & 0x0003) == 0:
+                    # check if we crossed a nametable
+                    if (x_scroll & 0x1f) == 0:
+                        # switch name/attrib tables
+                        nt_addr ^= 0x0400
+                        at_addr ^= 0x0400
+                        nt_addr -= 0x0020
+                        at_addr -= 0x0008
+                        x_scroll -= 0x0020
+                    at_addr += 1
+
+                    if (y_scroll & 0x0002) == 0:
+                        if (x_scroll & 0x0002) == 0:
+                            attribs = (self.nes.mem.ppu_mem[at_addr] & 0x03) << 2
+                        else:
+                            attribs = (self.nes.mem.ppu_mem[at_addr] & 0x0C)
+                    else:
+                        if (x_scroll & 0x0002) == 0:
+                            attribs = (self.nes.mem.ppu_mem[at_addr] & 0x30) << 2
+                        else:
+                            attribs = (self.nes.mem.ppu_mem[at_addr] & 0xC0) >> 4
+
+        # subtile y_offset == 7
+        if (self.loopyV & 0x7000) == 0x7000:
+            # subtile y_offset = 0
+            self.loopyV &= 0x8fff
+
+            # nametable line == 29
+            if (self.loopyV & 0x03e0) == 0x03a0:
+                # switch nametables (bit 11)
+                self.loopyV ^= 0x0800
+
+                # name table line = 0
+                self.loopyV &= 0xfc1f
+            else:
+                # nametable line == 31
+                if (self.loopyV & 0x03e0) == 0x03e0:
+                    # name table line = 0
+                    self.loopyV &= 0xfc1f
+                else:
+                    self.loopyV += 0x0020
+        else:
+            # next subtile y_offset
+            self.loopyV += 0x1000
+
+    def check_sprite_hit(self, scanline):
+        # sprite zero detection
+        for i in range(self.nes.width):
+            if (self.bgcache[i][scanline - 1] > 0) and (self.sprcache[i][scanline - 1] > 0):
+                # set the sprite zero flag
+                self.status |= 0x40
+
+    def render_sprite(self, x, y, pattern_num, attribs, spr_nr):
+        color_bit1 = bool(attribs & 0x01)
+        color_bit2 = bool(attribs & 0x02)
+        disp_spr_back = bool(attribs & 0x20)
+        flip_spr_hor = bool(attribs & 0x40)
+        flip_spr_ver = bool(attribs & 0x80)
+
+        bit1 = np.zeros(8 * 16, np.uint8).reshape(8, 16)
+        bit2 = np.zeros(8 * 16, np.uint8).reshape(8, 16)
+        sprite = np.zeros(8 * 16, np.uint8).reshape(8, 16)
+
+        if not self.sprite_addr_hi():
+            sprite_pattern_table = 0x0000
+        else:
+            sprite_pattern_table = 0x1000
+
+	    # pattern_number * 16
+        spr_start = sprite_pattern_table + ((pattern_num << 3) << 1)
+
+        if not self.sprite_16():
+            # 8 x 8 sprites
+            # fetch bits
+            if not bool(flip_spr_hor) and not bool(flip_spr_ver):
+                for i in range(7)[::-1]:
+                    for j in range(7):
+                        bit1[7 - i][j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
+                        bit2[7 - i][j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
+            elif bool(flip_spr_hor) and not bool(flip_spr_ver):
+                for i in range(7):
+                    for j in range(7):
+                        bit1[i][j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
+                        bit2[i][j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
+            elif not bool(flip_spr_hor) and bool(flip_spr_ver):
+                for i in range(7)[::-1]:
+                    for j in range(7)[::-1]:
+                        bit1[7 - i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
+                        bit2[7 - i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
+            elif bool(flip_spr_hor) and bool(flip_spr_ver):
+                for i in range(7):
+                    for j in range(7)[::-1]:
+                        bit1[i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
+                        bit2[i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
+
+            # merge bits
+            for i in range(7):
+                for j in range(7):
+                    if (bit1[i][j] == 0) and (bit2[i][j] == 0):
+                        sprite[i][j] = 0
+                    elif (bit1[i][j] == 1) and (bit2[i][j] == 0):
+                        sprite[i][j] = 1
+                    elif (bit1[i][j] == 0) and (bit2[i][j] == 1):
+                        sprite[i][j] = 2
+                    elif (bit1[i][j] == 1) and (bit2[i][j] == 1):
+                        sprite[i][j] = 3
+
+            # add sprite attribute colors
+            if not bool(flip_spr_hor) and not bool(flip_spr_ver):
+                for i in range(7)[::-1]:
+                    for j in range(7):
+                        if sprite[7 - i][j] != 0:
+                            sprite[7 - i][j] += ((attribs & 0x03) << 2)
+            elif bool(flip_spr_hor) and not bool(flip_spr_ver):
+                for i in range(7):
+                    for j in range(7):
+                        if sprite[i][j] != 0:
+                            sprite[i][j] += ((attribs & 0x03) << 2)
+            elif not bool(flip_spr_hor) and bool(flip_spr_ver):
+                for i in range(7)[::-1]:
+                    for j in range(7)[::-1]:
+                        if sprite[7 - i][7 - j] != 0:
+                            sprite[7 - i][7 - j] += ((attribs & 0x03) << 2)
+            elif bool(flip_spr_hor) and bool(flip_spr_ver):
+                for i in range(7):
+                    for j in range(7)[::-1]:
+                        if sprite[i][7 - j] != 0:
+                            sprite[i][7 - j] += ((attribs & 0x03) << 2)
+
+            for i in range(7):
+                for j in range(7):
+                    # cache pixel for sprite zero detection
+                    if spr_nr == 0:
+                        self.sprcache[x + i][y + j] = sprite[i][j]
+
+                    if sprite[i][j] != 0:
+                        # sprite priority check
+                        if not disp_spr_back:
+                            if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                                # draw pixel
+                                if self.scale > 1:
+                                    for s_y in range(scale - 1):
+                                        for s_x in range(scale - 1):
+                                            disp_x = (x + i) * self.scale + s_x
+                                            disp_y = (y + j) * self.scale + s_y
+                                            disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
+                                            self.nes.disp.set_pixel(disp_x, disp_y, color)
+                                else:
+                                    disp_x = x + i
+                                    disp_y = y + j
+                                    disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
+                        else:
+                            if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                                # draw the sprite pixel if the background pixel is transparent (0)
+                                if bgcache[x + i][y + j] == 0:
+                                    # draw pixel
+                                    if self.scale > 1:
+                                        for s_y in range(scale - 1):
+                                            for s_x in range(scale - 1):
+                                                disp_x = (x + i) * self.scale + s_x
+                                                disp_y = (y + j) * self.scale + s_y
+                                                disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
+                                                self.nes.disp.set_pixel(disp_x, disp_y, color)
+                                    else:
+                                        disp_x = x + i
+                                        disp_y = y + j
+                                        disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
+        else:
+            # 8 x 16 sprites
+            # fetch bits
+            if not bool(flip_spr_hor) and not bool(flip_spr_ver):
+                for i in range(7)[::-1]:
+                    for j in range(15):
+                        bit1[7 - i][j] = bool((self.nes.mem.ppu_memory[spr_start + j] >> i) & 0x01)
+                        bit2[7 - i][j] = bool((self.nes.mem.ppu_memory[spr_start + 8 + j] >> i) & 0x01)
+            elif bool(flip_spr_hor) and not bool(flip_spr_ver):
+                for i in range(7):
+                    for j in range(15):
+                        bit1[i][j] = bool((self.nes.mem.ppu_memory[spr_start + j] >> i) & 0x01)
+                        bit2[i][j] = bool((self.nes.mem.ppu_memory[spr_start + 8 + j] >> i) & 0x01)
+            elif not bool(flip_spr_hor) and bool(flip_spr_ver):
+                for i in range(7)[::-1]:
+                    for j in range(15)[::-1]:
+                        bit1[7 - i][7 - j] = bool((self.nes.mem.ppu_memory[spr_start + j] >> i) & 0x01)
+                        bit2[7 - i][7 - j] = bool((self.nes.mem.ppu_memory[spr_start + 8 + j] >> i) & 0x01)
+            elif bool(flip_spr_hor) and bool(flip_spr_ver):
+                for i in range(7):
+                    for j in range(15)[::-1]:
+                        bit1[i][7 - j] = bool((self.nes.mem.ppu_memory[spr_start + j] >> i) & 0x01)
+                        bit2[i][7 - j] = bool((self.nes.mem.ppu_memory[spr_start + 8 + j] >> i) & 0x01)
+
+            # merge bits
+            for i in range(7):
+                for j in range(15):
+                    if (bit1[i][j] == 0) and (bit2[i][j] == 0):
+                        sprite[i][j] = 0
+                    elif (bit1[i][j] == 1) and (bit2[i][j] == 0):
+                        sprite[i][j] = 1
+                    elif (bit1[i][j] == 0) and (bit2[i][j] == 1):
+                        sprite[i][j] = 2
+                    elif (bit1[i][j] == 1) and (bit2[i][j] == 1):
+                        sprite[i][j] = 3
+
+            # add sprite attribute colors
+            if not bool(flip_spr_hor) and not bool(flip_spr_ver):
+                for i in range(7)[::-1]:
+                    for j in range(15):
+                        if sprite[7 - i][j] != 0:
+                            sprite[7 - i][j] += ((attribs & 0x03) << 2)
+            elif bool(flip_spr_hor) and not bool(flip_spr_ver):
+                for i in range(7):
+                    for j in range(15):
+                        if sprite[i][j] != 0:
+                            sprite[i][j] += ((attribs & 0x03) << 2)
+            elif not bool(flip_spr_hor) and bool(flip_spr_ver):
+                for i in range(7)[::-1]:
+                    for j in range(15)[::-1]:
+                        if sprite[7 - i][15 - j] != 0:
+                            sprite[7 - i][15 - j] += ((attribs & 0x03) << 2)
+            elif bool(flip_spr_hor) and bool(flip_spr_ver):
+                for i in range(7):
+                    for j in range(15)[::-1]:
+                        if sprite[i][15 - j] != 0:
+                            sprite[i][15 - j] += ((attribs & 0x03) << 2)
+
+            for i in range(7):
+                for j in range(15):
+                    # cache pixel for sprite zero detection
+                    if spr_nr == 0:
+                        self.sprcache[x + i][y + j] = sprite[i][j]
+
+                    if sprite[i][j] != 0:
+                        # sprite priority check
+                        if not disp_spr_back:
+                            if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                                # draw pixel
+                                if self.scale > 1:
+                                    for s_y in range(scale - 1):
+                                        for s_x in range(scale - 1):
+                                            disp_x = (x + i) * self.scale + s_x
+                                            disp_y = (y + j) * self.scale + s_y
+                                            disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
+                                            self.nes.disp.set_pixel(disp_x, disp_y, color)
+                                else:
+                                    disp_x = x + i
+                                    disp_y = y + j
+                                    disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
+                        else:
+                            # draw the sprite pixel if the background pixel is transparent (0)
+                            if bgcache[x + i][y + j] == 0:
+                                if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                                    # draw pixel
+                                    if self.scale > 1:
+                                        for s_y in range(scale - 1):
+                                            for s_x in range(scale - 1):
+                                                disp_x = (x + i) * self.scale + s_x
+                                                disp_y = (y + j) * self.scale + s_y
+                                                disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
+                                                self.nes.disp.set_pixel(disp_x, disp_y, color)
+                                    else:
+                                        disp_x = x + i
+                                        disp_y = y + j
+                                        disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
+
+
+
+    def render_sprites(self):
+        # clear sprite cache
+        self.sprcache[:][:] = 0
+        # fetch all 64 sprites out of the sprite memory 4 bytes at a time and render the sprite
+        # sprites are drawn in priority from sprite 64 to 0
+        for i in range(63)[::-1]:
+            x = self.nes.mem.sprite_mem[i * 4]
+            y = self.nes.mem.sprite_mem[i * 4 + 3]
+            pattern_num = self.nes.mem.sprite_mem[i * 4 + 1]
+            attribs = self.nes.mem.sprite_mem[i * 4 + 2]
+            self.render_sprite(x, y, pattern_num, attribs, i)

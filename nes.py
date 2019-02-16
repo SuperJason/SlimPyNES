@@ -35,6 +35,23 @@ class INPUT():
         for i in range(1, 8):
             self.pads[i] = 0x40
 
+class DISPLAY():
+    def __init__(self, nes):
+        self.nes = nes
+
+    def init(self):
+        # TODO
+        pass
+
+    def set_pixel(self, x, y, nes_color):
+        # TODO
+        pass
+
+    def update(self):
+        # TODO
+        pass
+
+
 class NES():
     # cpu speed
     PAL_SPEED = 1773447
@@ -48,17 +65,32 @@ class NES():
     # vblank int cycle timeout
     PAL_VBLANK_CYCLE_TIMEOUT = (313 - 240) * PAL_VBLANK_INT / 313
 
-    def __init__(self, cpu=None, ppu=None, mem=None, rom=None, in_put=None):
+    def __init__(self, cpu=None, ppu=None, mem=None, rom=None, disp=None, in_put=None):
         self.cpu = cpu
         self.ppu = ppu
         self.mem = mem
         self.rom = rom
+        self.disp = disp
         self.in_put = in_put
         # PAL
         self.start_init = 341
         self.vblank_init = self.PAL_VBLANK_INT
         self.vblank_cycle_timeout = self.PAL_VBLANK_CYCLE_TIMEOUT
         self.scanline_refresh = self.PAL_SCANLINE_REFRESH
+        self.hight = 240
+        self.width = 256
+
+        self.enable_background = 1
+        self.enable_sprites = 1
+
+        self.fullscreen = 0
+        self.scale = 1
+
+        self.frameskip = 0
+        self.skipframe = 0
+
+        # 10 ms
+        self.delay = 0.001
 
         self.lamenes_logs_fp = open(r'/home/jason/work/githubs/lamenes/log', 'r')
         self.lamenes_logs_regs = self.lamenes_logs_fp.readline()[0:-1]
@@ -97,29 +129,45 @@ class NES():
         self.cpu_is_running = 1
         while(self.cpu_is_running):
             print(' -- NES CPU Loop Start --')
-            cpu.execute(nes.start_init)
-            # Set ppu status bit7 to 1 and enter vblank
-            ppu.status = 0x80
-            mem.cpu_mem[0x2002] = ppu.status
-            counter += cpu.execute(12)
-            #self.cpu_is_running -= 1
-            if self.ppu.exec_nmi_on_vblank():
-                counter += cpu.nmi(counter);
+            self.cpu.execute(nes.start_init)
 
-            counter += cpu.execute(self.vblank_cycle_timeout)
+            # Set ppu status bit7 to 1 and enter vblank
+            self.ppu.status = 0x80
+            self.mem.cpu_mem[0x2002] = self.ppu.status
+            counter += self.cpu.execute(12)
+
+            if self.ppu.exec_nmi_on_vblank():
+                counter += self.cpu.nmi(counter);
+
+            counter += self.cpu.execute(self.vblank_cycle_timeout)
 
             # vblank ends (ppu status bit7) is set to 0, sprite_zero (ppu status bit6) is set to 0
-            ppu.status &= 0x3f
+            self.ppu.status &= 0x3f
 
             # and write to mem
-            mem.write(0x2002, ppu.status)
+            self.mem.write(0x2002, self.ppu.status)
 
-            ppu.loopyV = ppu.loopyT
+            self.ppu.loopyV = self.ppu.loopyT
+
+            if self.skipframe > self.skipframe:
+                self.skipframe = 0
 
             for scanline in range(0, 240):
-                counter += cpu.execute(self.scanline_refresh)
+                if not self.ppu.sprite_zero():
+                    self.ppu.check_sprite_hit(scanline)
 
-            time.sleep(0.01)
+                self.ppu.render_background(scanline)
+
+                counter += self.cpu.execute(self.scanline_refresh)
+
+            self.ppu.render_sprites()
+
+            if self.skipframe == 0:
+                self.disp.update()
+
+            self.skipframe += 1
+
+            time.sleep(self.delay)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
@@ -144,6 +192,10 @@ if __name__ == '__main__':
     ppu = PPU(nes)
     nes.ppu = ppu
     ppu.reset()
+
+    disp = DISPLAY(nes)
+    nes.disp = disp
+    disp.init()
 
     in_put = INPUT(nes)
     nes.in_put = in_put
