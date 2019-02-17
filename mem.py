@@ -237,7 +237,10 @@ class MEMORY():
         # joypad1 data
         if addr == 0x4016:
             self.cpu_mem[addr] = self.nes.in_put.pads[self.nes.in_put.readcnt]
-            self.nes.in_put.readcnt += 1
+            if self.nes.in_put.readcnt == 7:
+                self.nes.in_put.readcnt  = 0
+            else:
+                self.nes.in_put.readcnt += 1
             return self.cpu_mem[addr]
 
         if addr == 0x4017:

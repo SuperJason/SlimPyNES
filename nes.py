@@ -20,14 +20,14 @@ class INPUT():
         self.pad1_A = 0x40
         self.pad1_B = 0x40
         self.pads = {
-            1: self.pad1_DOWN,
-            2: self.pad1_UP,
-            3: self.pad1_LEFT,
-            4: self.pad1_RIGHT,
-            5: self.pad1_START,
-            6: self.pad1_SELECT,
-            7: self.pad1_A,
-            8: self.pad1_B,
+            0: self.pad1_DOWN,
+            1: self.pad1_UP,
+            2: self.pad1_LEFT,
+            3: self.pad1_RIGHT,
+            4: self.pad1_START,
+            5: self.pad1_SELECT,
+            6: self.pad1_A,
+            7: self.pad1_B,
             }
         self.readcnt = 0
 
