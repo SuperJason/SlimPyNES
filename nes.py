@@ -128,7 +128,7 @@ class NES():
 
         self.cpu_is_running = 1
         while(self.cpu_is_running):
-            print(' -- NES CPU Loop Start --')
+            print(' -- NES CPU Loop Start -- ')
             self.cpu.execute(nes.start_init)
 
             # Set ppu status bit7 to 1 and enter vblank
@@ -136,7 +136,10 @@ class NES():
             self.mem.cpu_mem[0x2002] = self.ppu.status
             counter += self.cpu.execute(12)
 
+            #print('debug [%d] --- entering VBLANK! ---'%(self.cpu.dbg_cnt))
+            #print('ppu status: %x, ppu control_1: %x, ppu control_2: %x'%(self.ppu.status, self.ppu.control_1, self.ppu.control_2))
             if self.ppu.exec_nmi_on_vblank():
+                print('[%d] vblank = on'%(self.cpu.dbg_cnt))
                 counter += self.cpu.nmi(counter);
 
             counter += self.cpu.execute(self.vblank_cycle_timeout)

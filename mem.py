@@ -19,7 +19,7 @@ class MEMORY():
     def ppu_write(self, addr, value):
         if addr == 0x2000:
             self.nes.ppu.addr_tmp = value
-            self.nes.ppu.control1 = value
+            self.nes.ppu.control_1 = value
             self.cpu_mem[addr] = value
             self.nes.ppu.loopyT &= 0xf3ff # (0000110000000000)
             self.nes.ppu.loopyT |= (value & 3) << 10 # (00000011)
@@ -27,7 +27,7 @@ class MEMORY():
 
         if addr == 0x2001:
             self.nes.ppu.addr_tmp = value
-            self.nes.ppu.control2 = value
+            self.nes.ppu.control_2 = value
             self.cpu_mem[addr] = value
             return
 

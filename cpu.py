@@ -34,7 +34,7 @@ class CPU():
     # Get the cpu flags
     def get_sr(self):
         if self.sign_flag:
-            flags |= 0x80
+            flags = 0x80
         if self.overflow_flag:
             flags |= 0x40
         if self.break_flag:
@@ -1356,7 +1356,7 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         self.addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        reg = nes.mem.read(self.addr)
+        reg = self.mem.read(self.addr)
         self.x_reg = reg & 0xff
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
@@ -1423,7 +1423,7 @@ class CPU():
         return pc, cycle_count
 
     def load_a_y(self, pc, cycle_count): # 0xAC
-        name = 'LDA'
+        name = 'LDY'
         ext = 'A'
         size = 3
         cycle = 4
@@ -1431,8 +1431,8 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         self.addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
-        reg = self.y_reg
-        self.mem.cpu_mem[self.addr] = reg
+        reg = self.mem.cpu_mem[self.addr]
+        self.y_reg = reg
         self.sign_flag = bool(reg & 0x80)
         self.zero_flag = not reg
 
@@ -2439,9 +2439,9 @@ class CPU():
         if bool(self.debug & self.DBG_NMI):
             print('[%d] executing NMI routine'%(self.dbg_cnt - 1))
 
-        cpu.push((self.program_counter & 0xff00) >> 8)
-        cpu.push(self.program_counter & 0xff)
-        cpu.push(self.get_sr())
+        self.push((self.program_counter & 0xff00) >> 8)
+        self.push(self.program_counter & 0xff)
+        self.push(self.get_sr())
         self.break_flag = False
         self.interrupt_flag = True
         self.program_counter = (self.mem.cpu_mem[0xfffb] << 8) | self.mem.cpu_mem[0xfffa]
@@ -2449,7 +2449,8 @@ class CPU():
         return cycles - 7
 
     def execute(self, cycles = 1):
-        cycle_count = cycles
+        #print(" -- CPU Execute -- Start cycles: %d"%(cycles))
+        cycle_count = round(cycles)
         while(cycle_count > 0):
             self.dbg_cnt += 1
             self.update_status_reg()
