@@ -92,7 +92,7 @@ class NES():
         # 10 ms
         self.delay = 0.001
 
-        self.lamenes_logs_fp = open(r'/home/jason/work/githubs/lamenes/log', 'r')
+        self.lamenes_logs_fp = open(r'./lamenes_log', 'r')
         self.lamenes_logs_regs = self.lamenes_logs_fp.readline()[0:-1]
         self.lamenes_logs_flags = self.lamenes_logs_fp.readline()[0:-1]
         self.lamenes_logs_ops = self.lamenes_logs_fp.readline()[0:-1]

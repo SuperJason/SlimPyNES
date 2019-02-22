@@ -144,7 +144,7 @@ class CPU():
             ass_str = '\t(%x, X) [mem location: %x]'%(addr, value)
         elif ext == 'INI':
             addr = self.mem.cpu_mem[self.program_counter]
-            value = (self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr] + self.y_reg
+            value = ((self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr]) + self.y_reg
             ass_str = '\t(%x), Y [mem location: %x]'%(addr, value)
         else:
             ass_str = '\twhich is unknown'
@@ -1147,7 +1147,7 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        self.addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc] + self.x_reg
+        self.addr = ((self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]) + self.x_reg
         self.accumulator ^= self.mem.read(self.addr)
         self.sign_flag = bool(self.accumulator & 0x80)
         self.zero_flag = not bool(self.accumulator)
@@ -1163,7 +1163,7 @@ class CPU():
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        self.addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc] + self.y_reg
+        self.addr = ((self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]) + self.y_reg
         self.accumulator ^= self.mem.read(self.addr)
         self.sign_flag = bool(self.accumulator & 0x80)
         self.zero_flag = not bool(self.accumulator)
@@ -1197,7 +1197,7 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         self.addr = self.mem.cpu_mem[pc]
-        tmp = (self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr] + self.y_reg
+        tmp = ((self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr]) + self.y_reg
         self.accumulator ^= self.mem.read(tmp)
         self.sign_flag = bool(self.accumulator & 0x80)
         self.zero_flag = not bool(self.accumulator)
