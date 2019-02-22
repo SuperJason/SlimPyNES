@@ -783,15 +783,20 @@ class CPU():
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
-    def comp_mem_zp(self, pc, cycle_count): # 0xC5
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+    def comp_mem_zp_a(self, pc, cycle_count): # 0xC5
+        name = 'CMP'
+        ext = 'ZP'
+        size = 2
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[pc]
+        tmp = self.mem.read(self.addr)
+        self.carry_flag = bool(self.accumulator >= tmp)
+        self.sign_flag = bool(self.sign8(self.accumulator) < self.sign8(tmp))
+        self.zero_flag = bool(self.accumulator == tmp)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -896,15 +901,20 @@ class CPU():
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
-    def comp_mem_zp(self, pc, cycle_count): # 0xE4
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+    def comp_mem_zp_x(self, pc, cycle_count): # 0xE4
+        name = 'CPX'
+        ext = 'ZP'
+        size = 2
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[pc]
+        tmp = self.mem.read(self.addr)
+        self.carry_flag = bool(self.x_reg >= tmp)
+        self.sign_flag = bool(self.sign8(self.x_reg) < self.sign8(tmp))
+        self.zero_flag = bool(self.x_reg == tmp)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -943,15 +953,20 @@ class CPU():
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
-    def comp_mem_zp(self, pc, cycle_count): # 0xC4
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+    def comp_mem_zp_y(self, pc, cycle_count): # 0xC4
+        name = 'CPY'
+        ext = 'ZP'
+        size = 2
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[pc]
+        tmp = self.mem.read(self.addr)
+        self.carry_flag = bool(self.y_reg >= tmp)
+        self.sign_flag = bool(self.sign8(self.y_reg) < self.sign8(tmp))
+        self.zero_flag = bool(self.y_reg == tmp)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -1029,14 +1044,20 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def decr_mem_aix(self, pc, cycle_count): # 0xDE
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'DEC'
+        ext = 'AIX'
+        size = 3
         cycle = 7
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = ((self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]) + self.x_reg
+        tmp = self.mem.read(self.addr) - 1
+        self.mem.write(self.addr, tmp)
+        reg = self.mem.cpu_mem[self.addr]
+        self.sign_flag = bool(reg & 0x80)
+        self.zero_flag = not bool(reg)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -2811,8 +2832,8 @@ class CPU():
             0xbe: load_aiy_x,
             0xc0: comp_mem_im_y,
             0xc1: comp_mem_idi,
-            0xc4: comp_mem_zp,
-            0xc5: comp_mem_zp,
+            0xc4: comp_mem_zp_y,
+            0xc5: comp_mem_zp_a,
             0xc6: decr_mem_zp,
             0xc8: incr_y,
             0xc9: comp_mem_im_a,
@@ -2830,7 +2851,7 @@ class CPU():
             0xde: decr_mem_aix,
             0xe0: comp_mem_im_x,
             0xe1: sub_acc_idi,
-            0xe4: comp_mem_zp,
+            0xe4: comp_mem_zp_x,
             0xe5: sub_acc_zp,
             0xe6: incr_mem_zp,
             0xe8: incr_x,

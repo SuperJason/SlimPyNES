@@ -140,7 +140,7 @@ class PPU():
                     self.bgcache[(tile_count << 3) + i][scanline] = tile[self.loopyX + i]
 
                     # draw pixel
-                    if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                    if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                         if self.scale > 1:
                             for s_y in range(scale - 1):
                                 for s_x in range(scale - 1):
@@ -158,7 +158,7 @@ class PPU():
                     self.bgcache[(tile_count << 3) + i - loopyX][scanline] = tile[i]
 
                     # draw pixel
-                    if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                    if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                         if self.scale > 1:
                             for s_y in range(scale - 1):
                                 for s_x in range(scale - 1):
@@ -176,7 +176,7 @@ class PPU():
                     self.bgcache[(tile_count << 3) + i - self.loopyX][scanline] = tile[i]
 
                     # draw pixel
-                    if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                    if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                         if self.scale > 1:
                             for s_y in range(scale - 1):
                                 for s_x in range(scale - 1):
@@ -246,6 +246,8 @@ class PPU():
         for i in range(self.nes.width):
             if (self.bgcache[i][scanline - 1] > 0) and (self.sprcache[i][scanline - 1] > 0):
                 # set the sprite zero flag
+                if self.nes.debug & self.nes.PPU_DBG:
+                    print('debug [%d]: sprite zero found at x:%d, y:%d'%(self.nes.cpu.dbg_cnt, i, scanline - 1))
                 self.status |= 0x40
 
     def render_sprite(self, x, y, pattern_num, attribs, spr_nr):
@@ -334,7 +336,7 @@ class PPU():
                     if sprite[i][j] != 0:
                         # sprite priority check
                         if not disp_spr_back:
-                            if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                            if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                 # draw pixel
                                 if self.scale > 1:
                                     for s_y in range(scale - 1):
@@ -348,7 +350,7 @@ class PPU():
                                     disp_y = y + j
                                     disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
                         else:
-                            if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                            if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                 # draw the sprite pixel if the background pixel is transparent (0)
                                 if bgcache[x + i][y + j] == 0:
                                     # draw pixel
@@ -430,7 +432,7 @@ class PPU():
                     if sprite[i][j] != 0:
                         # sprite priority check
                         if not disp_spr_back:
-                            if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                            if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                 # draw pixel
                                 if self.scale > 1:
                                     for s_y in range(scale - 1):
@@ -446,7 +448,7 @@ class PPU():
                         else:
                             # draw the sprite pixel if the background pixel is transparent (0)
                             if bgcache[x + i][y + j] == 0:
-                                if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (nes.skipframe == 0):
+                                if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                     # draw pixel
                                     if self.scale > 1:
                                         for s_y in range(scale - 1):

@@ -65,6 +65,9 @@ class NES():
     # vblank int cycle timeout
     PAL_VBLANK_CYCLE_TIMEOUT = (313 - 240) * PAL_VBLANK_INT / 313
 
+    # Emulater Debug
+    PPU_DBG = 0x10
+
     def __init__(self, cpu=None, ppu=None, mem=None, rom=None, disp=None, in_put=None):
         self.cpu = cpu
         self.ppu = ppu
@@ -91,6 +94,8 @@ class NES():
 
         # 10 ms
         self.delay = 0.001
+
+        self.debug = self.PPU_DBG
 
         self.lamenes_logs_fp = open(r'./lamenes_log', 'r')
         self.lamenes_logs_regs = self.lamenes_logs_fp.readline()[0:-1]

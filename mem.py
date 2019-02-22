@@ -223,7 +223,7 @@ class MEMORY():
         if addr == 0x2007:
             tmp = self.nes.ppu.addr_tmp
             self.nes.ppu.addr_tmp = self.nes.ppu.addr
-            if self.nes.ppu.incrememt_32() == 0:
+            if self.nes.ppu.increment_32() == 0:
                 self.nes.ppu.addr += 1
             else:
                 self.nes.ppu.addr += 0x20
