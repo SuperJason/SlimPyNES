@@ -116,13 +116,13 @@ class CPU():
             value = self.mem.cpu_mem[addr]
             ass_str = '\t%x [mem value: %x]'%(addr, value)
         elif ext == 'ZPIX':
-            addr = self.mem.cpu_mem[self.program_counter] + self.x_reg
-            value = self.mem.cpu_mem[addr]
-            ass_str = '\t%x [mem value: %x]'%(addr, value)
+            addr = self.mem.cpu_mem[self.program_counter]
+            value = self.mem.cpu_mem[addr + self.x_reg]
+            ass_str = '\t%x, X [mem value: %x]'%(addr, value)
         elif ext == 'ZPIY':
-            addr = self.mem.cpu_mem[self.program_counter] + self.y_reg
-            value = self.mem.cpu_mem[addr]
-            ass_str = '\t#%x [mem value: %x]'%(addr, value)
+            addr = self.mem.cpu_mem[self.program_counter]
+            value = self.mem.cpu_mem[addr + self.y_reg]
+            ass_str = '\t%x, Y [mem value: %x]'%(addr, value)
         elif ext == 'A':
             addr = (self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter]
             value = self.mem.cpu_mem[addr]
@@ -389,38 +389,53 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def and_aiy(self, pc, cycle_count): # 0x39
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'AND'
+        ext = 'AIY'
+        size = 3
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        tmp = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        self.addr = tmp + self.y_reg
+        self.accumulator &= self.mem.read(self.addr)
+        self.sign_flag = bool(self.accumulator & 0x80)
+        self.zero_flag = not bool(self.accumulator)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def and_idi(self, pc, cycle_count): # 0x21
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'AND'
+        ext = 'IDI'
+        size = 2
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[pc] + self.x_reg
+        tmp = (self.mem.cpu_mem[self.addr + 1] << 8) | self.mem.cpu_mem[self.addr]
+        self.accumulator &= self.mem.read(tmp)
+        self.sign_flag = bool(self.accumulator & 0x80)
+        self.zero_flag = not bool(self.accumulator)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def and_ini(self, pc, cycle_count): # 0x31
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'AND'
+        ext = 'INI'
+        size = 2
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[pc]
+        tmp = ((self.mem.cpu_mem[self.addr + 1] << 8) | self.mem.cpu_mem[self.addr]) + self.y_reg
+        self.accumulator &= self.mem.read(tmp)
+        self.sign_flag = bool(self.accumulator & 0x80)
+        self.zero_flag = not bool(self.accumulator)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -801,14 +816,19 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_zpix(self, pc, cycle_count): # 0xD5
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'CMP'
+        ext = 'ZPIX'
+        size = 2
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[pc] + self.x_reg
+        tmp = self.mem.read(self.addr)
+        self.carry_flag = bool(self.accumulator >= tmp)
+        self.sign_flag = bool(self.sign8(self.accumulator) < self.sign8(tmp))
+        self.zero_flag = bool(self.accumulator == tmp)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -830,14 +850,20 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_aix(self, pc, cycle_count): # 0xDD
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'CMP'
+        ext = 'AIX'
+        size = 3
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = ((self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]) + self.x_reg
+        tmp = self.mem.read(self.addr)
+        reg = self.accumulator
+        self.carry_flag = bool(reg >= tmp)
+        self.sign_flag = bool(self.sign8(reg) < self.sign8(tmp))
+        self.zero_flag = bool(reg == tmp)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -860,26 +886,40 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_idi(self, pc, cycle_count): # 0xC1
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'CMP'
+        ext = 'IDI'
+        size = 2
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[pc] + self.x_reg
+        tmp2 = (self.mem.cpu_mem[self.addr + 1] << 8) | self.mem.cpu_mem[self.addr]
+        tmp = self.mem.read(tmp2)
+        reg = self.accumulator
+        self.carry_flag = bool(reg >= tmp)
+        self.sign_flag = bool(self.sign8(reg) < self.sign8(tmp))
+        self.zero_flag = bool(reg == tmp)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def comp_mem_ini(self, pc, cycle_count): # 0xD1
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'CMP'
+        ext = 'INI'
+        size = 2
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[pc]
+        tmp2 = ((self.mem.cpu_mem[self.addr + 1] << 8) | self.mem.cpu_mem[self.addr]) + self.y_reg
+        tmp = self.mem.read(tmp2)
+        reg = self.accumulator
+        self.carry_flag = bool(reg >= tmp)
+        self.sign_flag = bool(self.sign8(reg) < self.sign8(tmp))
+        self.zero_flag = bool(reg == tmp)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -1796,10 +1836,8 @@ class CPU():
 
 # NOP - No Operation (79 instructies?)
     def nop(self, pc, cycle_count): # 0xEA
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
+        name = 'NOP'
+        ext = 'NODATA'
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
@@ -1841,74 +1879,100 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_zpix(self, pc, cycle_count): # 0x15
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'ORA'
+        ext = 'ZPIX'
+        size = 2
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[pc] + self.x_reg
+        self.accumulator |= self.mem.read(self.addr)
+        self.sign_flag = bool(self.accumulator & 0x80)
+        self.zero_flag = not bool(self.accumulator)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_a(self, pc, cycle_count): # 0x0D
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'ORA'
+        ext = 'A'
+        size = 3
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = (self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]
+        self.accumulator |= self.mem.read(self.addr)
+        self.sign_flag = bool(self.accumulator & 0x80)
+        self.zero_flag = not bool(self.accumulator)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_aix(self, pc, cycle_count): # 0x1D
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'ORA'
+        ext = 'AIX'
+        size = 3
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = ((self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]) + self.x_reg
+        self.accumulator |= self.mem.read(self.addr)
+        self.sign_flag = bool(self.accumulator & 0x80)
+        self.zero_flag = not bool(self.accumulator)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_aiy(self, pc, cycle_count): # 0x19
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'ORA'
+        ext = 'AIY'
+        size = 3
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = ((self.mem.cpu_mem[pc + 1] << 8) | self.mem.cpu_mem[pc]) + self.x_reg
+        self.accumulator |= self.mem.read(self.addr)
+        self.sign_flag = bool(self.accumulator & 0x80)
+        self.zero_flag = not bool(self.accumulator)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_idi(self, pc, cycle_count): # 0x01
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'ORA'
+        ext = 'IDI'
+        size = 2
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[pc] + self.x_reg
+        tmp = (self.mem.cpu_mem[self.addr + 1] << 8) | self.mem.cpu_mem[self.addr]
+        self.accumulator |= self.mem.read(tmp)
+        self.sign_flag = bool(self.accumulator & 0x80)
+        self.zero_flag = not bool(self.accumulator)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
     def or_mem_ini(self, pc, cycle_count): # 0x11
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'ORA'
+        ext = 'INI'
+        size = 2
         cycle = 5
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[pc]
+        tmp = (self.mem.cpu_mem[self.addr + 1] << 8) | self.mem.cpu_mem[self.addr]  + self.y_reg
+        self.accumulator |= self.mem.read(tmp)
+        self.sign_flag = bool(self.accumulator & 0x80)
+        self.zero_flag = not bool(self.accumulator)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -2276,7 +2340,9 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         self.addr = self.mem.read(self.mem.cpu_mem[pc] + self.x_reg)
-        tmp = self.accumulator - self.addr - int(not self.carry_flag)
+        # TODO self.dbg_cnt: 385423
+        #tmp = self.accumulator - self.addr - int(not self.carry_flag)
+        tmp = (self.accumulator - self.addr - int(not self.carry_flag)) & 0xffffffff
         self.overflow_flag = bool((~(self.accumulator ^ self.addr)) & (self.accumulator ^ self.addr) & 0x80)
         self.carry_flag = tmp <= 0xff
         self.accumulator = tmp & 0xff
@@ -2289,7 +2355,7 @@ class CPU():
     def sub_acc_a(self, pc, cycle_count): # 0xED
         name = 'SBC'
         ext = 'A'
-        size = 2
+        size = 3
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
@@ -2445,15 +2511,17 @@ class CPU():
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
-    def store_zpix(self, pc, cycle_count): # 0x95
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+    def store_zpix_a(self, pc, cycle_count): # 0x95
+        name = 'STA'
+        ext = 'ZPIX'
+        size = 2
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[self.program_counter] + self.x_reg
+        self.mem.write(self.addr, self.accumulator)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -2589,14 +2657,16 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def store_zpix(self, pc, cycle_count): # 0x94
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'STY'
+        ext = 'ZPIX'
+        size = 2
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[self.program_counter] + self.x_reg
+        self.mem.write(self.addr, self.y_reg)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -2801,7 +2871,7 @@ class CPU():
             0x90: branch_cc,
             0x91: store_ini,
             0x94: store_zpix,
-            0x95: store_zpix,
+            0x95: store_zpix_a,
             0x96: store_zpiy,
             0x98: transfer_reg_ya,
             0x99: store_aiy,
