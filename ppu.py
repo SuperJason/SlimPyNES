@@ -105,6 +105,8 @@ class PPU():
             else:
                 attribs = (self.nes.mem.ppu_mem[at_addr] & 0xC0) >> 4
 
+        if self.nes.debug & self.nes.PPU_DBG:
+            print('[%d] nt_addr: %x, loopyT: %x, loopyV: %x, loopyX: %x'%(self.nes.cpu.dbg_cnt, nt_addr, self.loopyT, self.loopyV, self.loopyX))
         # draw 33 tiles in a scanline (32 + 1 for scrolling)
         for tile_count in range(33):
             # nt_data (ppu_memory[nt_addr]) * 16 = pattern table address
@@ -118,7 +120,7 @@ class PPU():
             for i in range(8)[::-1]:
                 bit1[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr] >> i) & 0x01)
                 bit2[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr + 8] >> i) & 0x01)
-            print(' ### DBG ### memory[0x%x]: 0x%x, memory[0x%x]: 0x%x'%(pt_addr, self.nes.mem.ppu_mem[pt_addr], pt_addr, self.nes.mem.ppu_mem[pt_addr + 8]))
+            #print(' ### DBG ### memory[0x%x]: 0x%x, memory[0x%x]: 0x%x, nt_addr: 0x%x, loopyV: 0x%x'%(pt_addr, self.nes.mem.ppu_mem[pt_addr], pt_addr, self.nes.mem.ppu_mem[pt_addr + 8], nt_addr, self.loopyV))
 
             # merge bits
             for i in range(8):
@@ -141,7 +143,7 @@ class PPU():
                 for i in range(8 - self.loopyX):
                     # cache pixel
                     self.bgcache[(tile_count << 3) + i][scanline] = tile[self.loopyX + i]
-                    print(' ### DBG ### %s(): %d, bgcache[%d][%d] = 0x%x, i: %d, tile_count: %d, loopyX: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, (tile_count << 3) + i, scanline, tile[self.loopyX + i], i, tile_count, self.loopyX))
+                    # print(' ### DBG ### %s(): %d, bgcache[%d][%d] = 0x%x, i: %d, tile_count: %d, loopyX: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, (tile_count << 3) + i, scanline, tile[self.loopyX + i], i, tile_count, self.loopyX))
 
                     # draw pixel
                     if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
@@ -160,7 +162,7 @@ class PPU():
                 for i in range(self.loopyX):
                     # cache pixel
                     self.bgcache[(tile_count << 3) + i - self.loopyX][scanline] = tile[i]
-                    print(' ### DBG ### %s(): %d, bgcache[%d][%d] = 0x%x, i: %d, tile_count: %d, loopyX: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, (tile_count << 3) + i - self.loopyX, scanline, tile[i], i, tile_count, self.loopyX))
+                    # print(' ### DBG ### %s(): %d, bgcache[%d][%d] = 0x%x, i: %d, tile_count: %d, loopyX: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, (tile_count << 3) + i - self.loopyX, scanline, tile[i], i, tile_count, self.loopyX))
 
                     # draw pixel
                     if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
@@ -179,7 +181,7 @@ class PPU():
                 for i in range(8):
                     # cache pixel
                     self.bgcache[(tile_count << 3) + i - self.loopyX][scanline] = tile[i]
-                    print(' ### DBG ### %s(): %d, bgcache[%d][%d] = 0x%x, i: %d, tile_count: %d, loopyX: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, (tile_count << 3) + i - self.loopyX, scanline, tile[i], i, tile_count, self.loopyX))
+                    # print(' ### DBG ### %s(): %d, bgcache[%d][%d] = 0x%x, i: %d, tile_count: %d, loopyX: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, (tile_count << 3) + i - self.loopyX, scanline, tile[i], i, tile_count, self.loopyX))
 
                     # draw pixel
                     if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
@@ -249,9 +251,9 @@ class PPU():
 
     def check_sprite_hit(self, scanline):
         # sprite zero detection
-        print(' ### DBG ### check_sprite_hit: scanline: %d'%(scanline))
+        # print(' ### DBG ### check_sprite_hit: scanline: %d'%(scanline))
         for i in range(self.nes.width):
-            print(' ### DBG ### bgcache[%d][%d] = 0x%x, sprcache[%d][%d] = 0x%x'%(i, scanline - 1, self.bgcache[i][scanline - 1], i, scanline - 1, self.sprcache[i][scanline - 1]))
+            # print(' ### DBG ### bgcache[%d][%d] = 0x%x, sprcache[%d][%d] = 0x%x'%(i, scanline - 1, self.bgcache[i][scanline - 1], i, scanline - 1, self.sprcache[i][scanline - 1]))
             if (self.bgcache[i][scanline - 1] > 0) and (self.sprcache[i][scanline - 1] > 0):
                 # set the sprite zero flag
                 if self.nes.debug & self.nes.PPU_DBG:
@@ -283,8 +285,8 @@ class PPU():
         if self.nes.debug & self.nes.PPU_DBG:
             print('[%d] (spritedebug [%d]): pattern_number = %d [hex %x], sprite_patterntable start addr = %x, ppu mem value = %x'%(self.nes.cpu.dbg_cnt, spr_nr, pattern_num, pattern_num, sprite_pattern_table + (pattern_num * 16), self.nes.mem.ppu_mem[sprite_pattern_table + (pattern_num * 16)]))
 
-        for i in range(8):
-            print('### DBG ### spr_start: %d, memory[%d] = 0x%x, memory[%d] = 0x%x'%(spr_start, spr_start + i, self.nes.mem.ppu_mem[spr_start + i], spr_start + 8 + i, self.nes.mem.ppu_mem[spr_start + 8 + i]))
+        #for i in range(8):
+        #    print('### DBG ### spr_start: %d, memory[%d] = 0x%x, memory[%d] = 0x%x'%(spr_start, spr_start + i, self.nes.mem.ppu_mem[spr_start + i], spr_start + 8 + i, self.nes.mem.ppu_mem[spr_start + 8 + i]))
         if not self.sprite_16():
             # 8 x 8 sprites
             # fetch bits
@@ -320,7 +322,7 @@ class PPU():
                         sprite[i][j] = 2
                     elif (bit1[i][j] == 1) and (bit2[i][j] == 1):
                         sprite[i][j] = 3
-                    print('### DBG ### sprite[%d][%d] = 0x%x'%(i, j, sprite[i][j]))
+                    #print('### DBG ### sprite[%d][%d] = 0x%x'%(i, j, sprite[i][j]))
 
             # add sprite attribute colors
             if not bool(flip_spr_hor) and not bool(flip_spr_ver):
@@ -349,7 +351,7 @@ class PPU():
                     # cache pixel for sprite zero detection
                     if spr_nr == 0:
                         self.sprcache[x + i][y + j] = sprite[i][j]
-                        print(' ### DBG ### %s(): %d, sprcache[%d][%d] = 0x%x, i: %d, j: %d, x: %d, y: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, x + i, y + j, self.sprcache[x + i][y + j], i, j ,x, y))
+                        #print(' ### DBG ### %s(): %d, sprcache[%d][%d] = 0x%x, i: %d, j: %d, x: %d, y: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, x + i, y + j, self.sprcache[x + i][y + j], i, j ,x, y))
 
                     if sprite[i][j] != 0:
                         # sprite priority check
@@ -446,7 +448,7 @@ class PPU():
                     # cache pixel for sprite zero detection
                     if spr_nr == 0:
                         self.sprcache[x + i][y + j] = sprite[i][j]
-                        print(' ### DBG ### %s(): %d, sprcache[%d][%d] = 0x%x, i: %d, j: %d, x: %d, y: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, x + i, y + j, self.sprcache[x + i][y + j], i, j ,x, y))
+                        #print(' ### DBG ### %s(): %d, sprcache[%d][%d] = 0x%x, i: %d, j: %d, x: %d, y: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, x + i, y + j, self.sprcache[x + i][y + j], i, j ,x, y))
 
                     if sprite[i][j] != 0:
                         # sprite priority check

@@ -2962,6 +2962,7 @@ class CPU():
             op = self.mem.cpu_mem[self.program_counter]
             self.program_counter += 1
             #print(' -- CPU Execute -- cnt: %d, pc: 0x%x, instruction: 0x%x'%(cycle_count, self.program_counter, op))
+            #print(' -- CPU Execute -- [%d] loopyT: %x, loopyV: %x, loopyX: %x, ppu_status: %x'%(self.nes.cpu.dbg_cnt, self.nes.ppu.loopyT, self.nes.ppu.loopyV, self.nes.ppu.loopyX, self.nes.ppu.status))
             if (op in self.opcode):
                 self.program_counter, cycle_count = self.opcode[op](self, self.program_counter, cycle_count)
             else:

@@ -160,14 +160,19 @@ class NES():
             if self.skipframe > self.skipframe:
                 self.skipframe = 0
 
+            # print('### DBG ### Before scanline')
             for scanline in range(0, 240):
+                # print('### DBG ### Before check sprite, ppu_status: 0x%x'%(self.ppu.status))
                 if not self.ppu.sprite_zero():
                     self.ppu.check_sprite_hit(scanline)
 
+                # print('### DBG ### Before render_background: scanline: %d'%(scanline))
                 self.ppu.render_background(scanline)
 
+                # print('### DBG ### Before cpu excute scanline_refresh: %d'%(self.scanline_refresh))
                 counter += self.cpu.execute(self.scanline_refresh)
 
+            # print('### DBG ### Before render_sprites')
             self.ppu.render_sprites()
 
             if self.skipframe == 0:

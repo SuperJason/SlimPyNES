@@ -79,6 +79,8 @@ class MEMORY():
                 self.nes.ppu.loopyT &= 0x00ff # (0011111100000000)
                 self.nes.ppu.loopyT |= (value & 0x3f) << 8 # (1100000000000000) (00111111)
 
+                if self.nes.debug & self.nes.PPU_DBG:
+                    print('[%d] 0x2006 first = %x, ppu_addr = %x, loopyT: %x'%(self.nes.cpu.dbg_cnt, value, self.nes.ppu.addr, self.nes.ppu.loopyT));
                 self.nes.ppu.addr_h = 1
                 self.cpu_mem[addr] = value
                 return
@@ -86,10 +88,12 @@ class MEMORY():
             # Second write -> Store the low byte 8 bits
             if self.nes.ppu.addr_h == 1:
                 self.nes.ppu.addr |= value
-                self.nes.ppu.loopyT &= 0x00ff # (0000000011111111)
+                self.nes.ppu.loopyT &= 0xff00 # (0000000011111111)
                 self.nes.ppu.loopyT |= value # (11111111)
                 self.nes.ppu.loopyV = self.nes.ppu.loopyT # v=t
 
+                if self.nes.debug & self.nes.PPU_DBG:
+                    print('[%d] 0x2006 second = %x, ppu_addr = %x, loopyT: %x'%(self.nes.cpu.dbg_cnt, value, self.nes.ppu.addr, self.nes.ppu.loopyT));
                 self.nes.ppu.addr_h = 0
                 self.cpu_mem[addr] = value
                 return
@@ -212,6 +216,9 @@ class MEMORY():
             self.nes.ppu.status_tmp = self.nes.ppu.status
             # set ppu status (D7) to 0 (vblank_on)
             self.nes.ppu.status &= 0x7f
+            self.write(0x2002, self.nes.ppu.status)
+            # set ppu_status (D6) to 0 (sprite_zero)
+            self.nes.ppu.status &= 0x1f
             self.write(0x2002, self.nes.ppu.status)
             # reset VRAM Address Register #1
             self.nes.ppu.bgscr_f = 0x00
