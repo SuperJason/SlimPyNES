@@ -157,7 +157,7 @@ class CPU():
         print(regs_str)
         print(flags_str)
         print(ops_str)
-        self.nes.log_cmp_debug(regs_str, flags_str, ops_str)
+        #self.nes.log_cmp_debug(regs_str, flags_str, ops_str)
 
 
 # ----- OpCode Functions -----

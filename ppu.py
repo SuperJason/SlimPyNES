@@ -39,6 +39,8 @@ class PPU():
         # used to export the current scanline for the debugger
         self.current_scanline = 0
 
+        self.scale = 1
+
     # memory[0x2000]
     def exec_nmi_on_vblank(self):
         return self.control_1 & 0x80 # 1 = Generate VBlank NMI
@@ -77,12 +79,14 @@ class PPU():
         print(' -- PPU Reset --')
 
     def render_background(self, scanline):
-        print('[%d] --- start scanline: %d (%x) ---'%(self.nes.cpu.dbg_cnt, scanline, scanline))
         bit1 = np.zeros(8, np.uint8)
         bit2 = np.zeros(8, np.uint8)
         tile = np.zeros(8, np.uint8)
 
         self.current_scanline = scanline
+
+        if self.nes.debug & self.nes.PPU_DBG:
+            print('[%d] --- start scanline: %d (%x) ---'%(self.nes.cpu.dbg_cnt, scanline, scanline))
 
         # loopy scanline start -> v:0000010000011111=t:0000010000011111 | v=t
         self.loopyV &= 0xfbe0
@@ -107,6 +111,7 @@ class PPU():
 
         if self.nes.debug & self.nes.PPU_DBG:
             print('[%d] nt_addr: %x, loopyT: %x, loopyV: %x, loopyX: %x'%(self.nes.cpu.dbg_cnt, nt_addr, self.loopyT, self.loopyV, self.loopyX))
+
         # draw 33 tiles in a scanline (32 + 1 for scrolling)
         for tile_count in range(33):
             # nt_data (ppu_memory[nt_addr]) * 16 = pattern table address
@@ -143,59 +148,59 @@ class PPU():
                 for i in range(8 - self.loopyX):
                     # cache pixel
                     self.bgcache[(tile_count << 3) + i][scanline] = tile[self.loopyX + i]
-                    # print(' ### DBG ### %s(): %d, bgcache[%d][%d] = 0x%x, i: %d, tile_count: %d, loopyX: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, (tile_count << 3) + i, scanline, tile[self.loopyX + i], i, tile_count, self.loopyX))
 
                     # draw pixel
-                    if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
+                    if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
                         if self.scale > 1:
                             for s_y in range(scale):
                                 for s_x in range(scale):
-                                    disp_x = (x + i) * self.scale + s_x
-                                    disp_y = (y + j) * self.scale + s_y
-                                    disp_color = ppu_memory[0x3f10 + (tile[i][j])]
-                                    self.nes.disp.set_pixel(disp_x, disp_y, color)
+                                    disp_x = ((tile_count << 3) + i) * self.scale + s_x
+                                    disp_y = scanline * self.scale + s_y
+                                    disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[self.loopyX + i])]
+                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
-                            disp_x = x + i
-                            disp_y = y + j
-                            disp_color = ppu_memory[0x3f10 + (tile[i][j])]
+                            disp_x = (tile_count << 3) + i + s_x
+                            disp_y = scanline + s_y
+                            disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[self.loopyX + i])]
+                            self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
             elif (tile_count == 32) and (self.loopyX != 0):
                 for i in range(self.loopyX):
                     # cache pixel
                     self.bgcache[(tile_count << 3) + i - self.loopyX][scanline] = tile[i]
-                    # print(' ### DBG ### %s(): %d, bgcache[%d][%d] = 0x%x, i: %d, tile_count: %d, loopyX: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, (tile_count << 3) + i - self.loopyX, scanline, tile[i], i, tile_count, self.loopyX))
 
                     # draw pixel
-                    if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
+                    if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
                         if self.scale > 1:
                             for s_y in range(scale):
                                 for s_x in range(scale):
-                                    disp_x = (x + i) * self.scale + s_x
-                                    disp_y = (y + j) * self.scale + s_y
-                                    disp_color = ppu_memory[0x3f10 + (tile[i][j])]
-                                    self.nes.disp.set_pixel(disp_x, disp_y, color)
+                                    disp_x = ((tile_count << 3) + i - self.loopyX) * self.scale + s_x
+                                    disp_y = scanline * self.scale + s_y
+                                    disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
+                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
-                            disp_x = x + i
-                            disp_y = y + j
-                            disp_color = ppu_memory[0x3f10 + (tile[i][j])]
+                            disp_x = (tile_count << 3) + i - self.loopyX
+                            disp_y = scanline
+                            disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[self.loopyX + i])]
+                            self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
             else:
                 for i in range(8):
                     # cache pixel
                     self.bgcache[(tile_count << 3) + i - self.loopyX][scanline] = tile[i]
-                    # print(' ### DBG ### %s(): %d, bgcache[%d][%d] = 0x%x, i: %d, tile_count: %d, loopyX: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, (tile_count << 3) + i - self.loopyX, scanline, tile[i], i, tile_count, self.loopyX))
 
                     # draw pixel
-                    if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
+                    if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
                         if self.scale > 1:
                             for s_y in range(scale):
                                 for s_x in range(scale):
-                                    disp_x = (x + i) * self.scale + s_x
-                                    disp_y = (y + j) * self.scale + s_y
-                                    disp_color = ppu_memory[0x3f10 + (tile[i][j])]
-                                    self.nes.disp.set_pixel(disp_x, disp_y, color)
+                                    disp_x = ((tile_count << 3) + i - self.loopyX) * self.scale + s_x
+                                    disp_y = scanline * self.scale + s_y
+                                    disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
+                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
-                            disp_x = x + i
-                            disp_y = y + j
-                            disp_color = ppu_memory[0x3f10 + (tile[i][j])]
+                            disp_x = (tile_count << 3) + i - self.loopyX
+                            disp_y = scanline
+                            disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
+                            self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
 
             nt_addr += 1
             x_scroll += 1
@@ -215,16 +220,16 @@ class PPU():
                         x_scroll -= 0x0020
                     at_addr += 1
 
-                    if (y_scroll & 0x0002) == 0:
-                        if (x_scroll & 0x0002) == 0:
-                            attribs = (self.nes.mem.ppu_mem[at_addr] & 0x03) << 2
-                        else:
-                            attribs = (self.nes.mem.ppu_mem[at_addr] & 0x0C)
+                if (y_scroll & 0x0002) == 0:
+                    if (x_scroll & 0x0002) == 0:
+                        attribs = (self.nes.mem.ppu_mem[at_addr] & 0x03) << 2
                     else:
-                        if (x_scroll & 0x0002) == 0:
-                            attribs = (self.nes.mem.ppu_mem[at_addr] & 0x30) << 2
-                        else:
-                            attribs = (self.nes.mem.ppu_mem[at_addr] & 0xC0) >> 4
+                        attribs = (self.nes.mem.ppu_mem[at_addr] & 0x0C)
+                else:
+                    if (x_scroll & 0x0002) == 0:
+                        attribs = (self.nes.mem.ppu_mem[at_addr] & 0x30) << 2
+                    else:
+                        attribs = (self.nes.mem.ppu_mem[at_addr] & 0xC0) >> 4
 
         # subtile y_offset == 7
         if (self.loopyV & 0x7000) == 0x7000:
@@ -363,51 +368,53 @@ class PPU():
                                         for s_x in range(scale):
                                             disp_x = (x + i) * self.scale + s_x
                                             disp_y = (y + j) * self.scale + s_y
-                                            disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
-                                            self.nes.disp.set_pixel(disp_x, disp_y, color)
+                                            disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                            self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                                 else:
                                     disp_x = x + i
                                     disp_y = y + j
-                                    disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
+                                    disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
                             if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                 # draw the sprite pixel if the background pixel is transparent (0)
-                                if bgcache[x + i][y + j] == 0:
+                                if self.bgcache[x + i][y + j] == 0:
                                     # draw pixel
                                     if self.scale > 1:
                                         for s_y in range(scale):
                                             for s_x in range(scale):
                                                 disp_x = (x + i) * self.scale + s_x
                                                 disp_y = (y + j) * self.scale + s_y
-                                                disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
-                                                self.nes.disp.set_pixel(disp_x, disp_y, color)
+                                                disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                                self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                                     else:
                                         disp_x = x + i
                                         disp_y = y + j
-                                        disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
+                                        disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                        self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
         else:
             # 8 x 16 sprites
             # fetch bits
             if not bool(flip_spr_hor) and not bool(flip_spr_ver):
                 for i in range(8)[::-1]:
                     for j in range(16):
-                        bit1[7 - i][j] = bool((self.nes.mem.ppu_memory[spr_start + j] >> i) & 0x01)
-                        bit2[7 - i][j] = bool((self.nes.mem.ppu_memory[spr_start + 8 + j] >> i) & 0x01)
+                        bit1[7 - i][j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
+                        bit2[7 - i][j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
             elif bool(flip_spr_hor) and not bool(flip_spr_ver):
                 for i in range(8):
                     for j in range(16):
-                        bit1[i][j] = bool((self.nes.mem.ppu_memory[spr_start + j] >> i) & 0x01)
-                        bit2[i][j] = bool((self.nes.mem.ppu_memory[spr_start + 8 + j] >> i) & 0x01)
+                        bit1[i][j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
+                        bit2[i][j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
             elif not bool(flip_spr_hor) and bool(flip_spr_ver):
                 for i in range(8)[::-1]:
                     for j in range(16)[::-1]:
-                        bit1[7 - i][7 - j] = bool((self.nes.mem.ppu_memory[spr_start + j] >> i) & 0x01)
-                        bit2[7 - i][7 - j] = bool((self.nes.mem.ppu_memory[spr_start + 8 + j] >> i) & 0x01)
+                        bit1[7 - i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
+                        bit2[7 - i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
             elif bool(flip_spr_hor) and bool(flip_spr_ver):
                 for i in range(8):
                     for j in range(16)[::-1]:
-                        bit1[i][7 - j] = bool((self.nes.mem.ppu_memory[spr_start + j] >> i) & 0x01)
-                        bit2[i][7 - j] = bool((self.nes.mem.ppu_memory[spr_start + 8 + j] >> i) & 0x01)
+                        bit1[i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
+                        bit2[i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
 
             # merge bits
             for i in range(8):
@@ -460,15 +467,16 @@ class PPU():
                                         for s_x in range(scale):
                                             disp_x = (x + i) * self.scale + s_x
                                             disp_y = (y + j) * self.scale + s_y
-                                            disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
-                                            self.nes.disp.set_pixel(disp_x, disp_y, color)
+                                            disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                            self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                                 else:
                                     disp_x = x + i
                                     disp_y = y + j
-                                    disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
+                                    disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
                             # draw the sprite pixel if the background pixel is transparent (0)
-                            if bgcache[x + i][y + j] == 0:
+                            if self.bgcache[x + i][y + j] == 0:
                                 if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                     # draw pixel
                                     if self.scale > 1:
@@ -476,13 +484,13 @@ class PPU():
                                             for s_x in range(scale):
                                                 disp_x = (x + i) * self.scale + s_x
                                                 disp_y = (y + j) * self.scale + s_y
-                                                disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
-                                                self.nes.disp.set_pixel(disp_x, disp_y, color)
+                                                disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                                self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                                     else:
                                         disp_x = x + i
                                         disp_y = y + j
-                                        disp_color = ppu_memory[0x3f10 + (sprite[i][j])]
-
+                                        disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                        self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
 
 
     def render_sprites(self):
