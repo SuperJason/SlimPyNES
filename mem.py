@@ -98,6 +98,8 @@ class MEMORY():
                 self.cpu_mem[addr] = value
                 return
 
+        #print(' ### DBG ### %s(): %d, [%d] ppu_mem[2000]: %x'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, self.nes.cpu.dbg_cnt, self.nes.mem.ppu_mem[0x2000]))
+
         # vram i/o register
         if addr == 0x2007:
             # if the vram_write_flag is on, vram writes should ignored
@@ -105,7 +107,11 @@ class MEMORY():
                 return
 
             self.nes.ppu.addr_tmp = value
-            self.ppu_mem[addr] = value
+
+            if self.nes.debug & self.nes.PPU_DBG:
+                print('[%d] 0x2007 -> writing [%x] to ppu_memory[%x]'%(self.nes.cpu.dbg_cnt, value, self.nes.ppu.addr));
+
+            self.ppu_mem[self.nes.ppu.addr] = value
 
             # nametable mirroring
             if self.nes.ppu.addr > 0x1999 and self.nes.ppu.addr < 0x3000:

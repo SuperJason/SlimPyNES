@@ -81,6 +81,8 @@ class DISPLAY():
         r = self.palette[nes_color].r
         g = self.palette[nes_color].g
         b = self.palette[nes_color].b
+        if self.nes.debug & self.nes.DISP_DBG:
+            print('[%d] --- x: %d, y: %d, nes_color: %d --- r: %x, g: %x, b: %x ---'%(self.nes.cpu.dbg_cnt, x, y, nes_color, r, g, b))
         self.screen.set_at([x, y], [r, g, b])
 
     def update(self):
@@ -102,6 +104,9 @@ class NES():
 
     # Emulater Debug
     PPU_DBG = 0x10
+    PPU_BG_DBG = 0x20
+    PPU_SPR_DBG = 0x40
+    DISP_DBG = 0x100
 
     def __init__(self, cpu=None, ppu=None, mem=None, rom=None, disp=None, in_put=None):
         self.cpu = cpu
@@ -130,7 +135,7 @@ class NES():
         # 10 ms
         self.delay = 0.001
 
-        self.debug = self.PPU_DBG
+        self.debug = self.DISP_DBG | self.PPU_DBG
 
         self.lamenes_logs_fp = open(r'./lamenes_log', 'r')
         self.lamenes_logs_regs = self.lamenes_logs_fp.readline()[0:-1]
@@ -215,7 +220,7 @@ class NES():
 
             self.skipframe += 1
 
-            time.sleep(self.delay)
+            #time.sleep(self.delay)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:

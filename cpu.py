@@ -11,7 +11,8 @@ class CPU():
     def __init__(self, nes):
         self.nes = nes
         self.mem = nes.mem
-        self.debug = self.DBG_OPCODE | self.DBG_NMI
+        #self.debug = self.DBG_OPCODE | self.DBG_NMI
+        self.debug = 0
         self.dbg_cnt = 0
         self.addr = 0
 

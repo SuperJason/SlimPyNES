@@ -85,7 +85,7 @@ class PPU():
 
         self.current_scanline = scanline
 
-        if self.nes.debug & self.nes.PPU_DBG:
+        if self.nes.debug & self.nes.PPU_BG_DBG:
             print('[%d] --- start scanline: %d (%x) ---'%(self.nes.cpu.dbg_cnt, scanline, scanline))
 
         # loopy scanline start -> v:0000010000011111=t:0000010000011111 | v=t
@@ -109,13 +109,14 @@ class PPU():
             else:
                 attribs = (self.nes.mem.ppu_mem[at_addr] & 0xC0) >> 4
 
-        if self.nes.debug & self.nes.PPU_DBG:
+        if self.nes.debug & self.nes.PPU_BG_DBG:
             print('[%d] nt_addr: %x, loopyT: %x, loopyV: %x, loopyX: %x'%(self.nes.cpu.dbg_cnt, nt_addr, self.loopyT, self.loopyV, self.loopyX))
 
         # draw 33 tiles in a scanline (32 + 1 for scrolling)
         for tile_count in range(33):
             # nt_data (ppu_memory[nt_addr]) * 16 = pattern table address
             pt_addr = (self.nes.mem.ppu_mem[nt_addr] << 4) + ((self.loopyV & 0x7000) >> 12)
+            #print('### DBG ### ppu_mem[%x]: %x, pt_addr: %d'%(nt_addr, self.nes.mem.ppu_mem[nt_addr], pt_addr))
 
             # check if the pattern address needs to be high
             if self.background_addr_hi():
@@ -125,7 +126,7 @@ class PPU():
             for i in range(8)[::-1]:
                 bit1[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr] >> i) & 0x01)
                 bit2[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr + 8] >> i) & 0x01)
-            #print(' ### DBG ### memory[0x%x]: 0x%x, memory[0x%x]: 0x%x, nt_addr: 0x%x, loopyV: 0x%x'%(pt_addr, self.nes.mem.ppu_mem[pt_addr], pt_addr, self.nes.mem.ppu_mem[pt_addr + 8], nt_addr, self.loopyV))
+                #print(' ### DBG ### ppu_mem[%x]: %x, ppu_mem[%x]: %x, bit1[%d]: %d, bit2[%d]: %d'%(pt_addr, self.nes.mem.ppu_mem[pt_addr], pt_addr + 8, self.nes.mem.ppu_mem[pt_addr + 8], 7 - i, bit1[7 - i], 7 - i, bit2[7 - i]))
 
             # merge bits
             for i in range(8):
@@ -197,6 +198,7 @@ class PPU():
                                     disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
                                     self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
+                            #print(' ### DBG ### %s(): %d, tile_count: %d, loopyX: %d, scanline: %d, tile[%d]: %x'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, tile_count, self.loopyX, scanline, i, tile[i]))
                             disp_x = (tile_count << 3) + i - self.loopyX
                             disp_y = scanline
                             disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
@@ -261,12 +263,12 @@ class PPU():
             # print(' ### DBG ### bgcache[%d][%d] = 0x%x, sprcache[%d][%d] = 0x%x'%(i, scanline - 1, self.bgcache[i][scanline - 1], i, scanline - 1, self.sprcache[i][scanline - 1]))
             if (self.bgcache[i][scanline - 1] > 0) and (self.sprcache[i][scanline - 1] > 0):
                 # set the sprite zero flag
-                if self.nes.debug & self.nes.PPU_DBG:
+                if self.nes.debug & self.nes.PPU_SPR_DBG:
                     print('debug [%d]: sprite zero found at x:%d, y:%d'%(self.nes.cpu.dbg_cnt, i, scanline - 1))
                 self.status |= 0x40
 
     def render_sprite(self, y, x, pattern_num, attribs, spr_nr):
-        if self.nes.debug & self.nes.PPU_DBG:
+        if self.nes.debug & self.nes.PPU_SPR_DBG:
             print('[%d] (spritedebug [%d]): hor = %x, ver = %x, pattern_number = %d, attribs = %d'%(self.nes.cpu.dbg_cnt, spr_nr, x, y, pattern_num, attribs))
         color_bit1 = bool(attribs & 0x01)
         color_bit2 = bool(attribs & 0x02)
@@ -277,7 +279,7 @@ class PPU():
         bit1 = np.zeros(8 * 16, np.uint8).reshape(8, 16)
         bit2 = np.zeros(8 * 16, np.uint8).reshape(8, 16)
         sprite = np.zeros(8 * 16, np.uint8).reshape(8, 16)
-        if self.nes.debug & self.nes.PPU_DBG:
+        if self.nes.debug & self.nes.PPU_SPR_DBG:
             print('[%d] (spritedebug [%d]): attribs [%x] -> color_bit1 [%x] -> color_bit2 [%x] -> disp_spr_back [%d] -> flip_spr_hor [%d] -> flip_spr_ver [%d]'%(self.nes.cpu.dbg_cnt, spr_nr, attribs, color_bit1, color_bit2, disp_spr_back, flip_spr_hor, flip_spr_ver))
 
         if not self.sprite_addr_hi():
@@ -287,7 +289,7 @@ class PPU():
 
 	    # pattern_number * 16
         spr_start = sprite_pattern_table + ((pattern_num << 3) << 1)
-        if self.nes.debug & self.nes.PPU_DBG:
+        if self.nes.debug & self.nes.PPU_SPR_DBG:
             print('[%d] (spritedebug [%d]): pattern_number = %d [hex %x], sprite_patterntable start addr = %x, ppu mem value = %x'%(self.nes.cpu.dbg_cnt, spr_nr, pattern_num, pattern_num, sprite_pattern_table + (pattern_num * 16), self.nes.mem.ppu_mem[sprite_pattern_table + (pattern_num * 16)]))
 
         #for i in range(8):
