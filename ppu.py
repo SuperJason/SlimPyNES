@@ -105,12 +105,13 @@ class PPU():
                 attribs = (self.nes.mem.ppu_mem[at_addr] & 0x0C)
         else:
             if (x_scroll & 0x0002) == 0:
-                attribs = (self.nes.mem.ppu_mem[at_addr] & 0x30) << 2
+                attribs = (self.nes.mem.ppu_mem[at_addr] & 0x30) >> 2
             else:
                 attribs = (self.nes.mem.ppu_mem[at_addr] & 0xC0) >> 4
 
-        if self.nes.cpu.dbg_cnt == 370815:
+        if False: #self.nes.cpu.dbg_cnt == 370815:
             print('[%d] nt_addr: %x, loopyT: %x, loopyV: %x, loopyX: %x'%(self.nes.cpu.dbg_cnt, nt_addr, self.loopyT, self.loopyV, self.loopyX))
+            print('[%d] y_scroll: %x, x_scroll: %x, mem[%x]: %x, attribs: %x'%(self.nes.cpu.dbg_cnt, y_scroll, x_scroll, at_addr, self.nes.mem.ppu_mem[at_addr], attribs))
 
         # draw 33 tiles in a scanline (32 + 1 for scrolling)
         for tile_count in range(33):
@@ -139,10 +140,10 @@ class PPU():
                 elif (bit1[i] == 1) and (bit2[i] == 1):
                     tile[i] = 3
 
-            if self.nes.cpu.dbg_cnt == 370815:
-                    print(' ### DBG ### %s(): %d, attribs: %x, tile: %x, %x, %x, %x, %x, %x, %x, %x'%(
+            if False: #self.nes.cpu.dbg_cnt == 370815:
+                print(' ### DBG ### %s(), tile_count: %d, attribs: %x, tile: %x, %x, %x, %x, %x, %x, %x, %x'%(
                         sys._getframe().f_code.co_name,
-                        sys._getframe().f_lineno,
+                        tile_count,
                         attribs,
                         tile[0],
                         tile[1],
@@ -211,12 +212,12 @@ class PPU():
                                     disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
                                     self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
-                            if self.nes.cpu.dbg_cnt == 370815:
-                                print(' ### DBG ### %s(): %d, tile_count: %d, loopyX: %d, scanline: %d, tile[%d]: %x'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, tile_count, self.loopyX, scanline, i, tile[i]))
+                            if False: #self.nes.cpu.dbg_cnt == 370815:
+                                print(' ### DBG ### %s(), tile_count: %d, loopyX: %d, scanline: %d, tile[%d]: %x'%(sys._getframe().f_code.co_name, tile_count, self.loopyX, scanline, i, tile[i]))
                             disp_x = (tile_count << 3) + i - self.loopyX
                             disp_y = scanline
                             disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
-                            print('### DBG ### disp_x: %d'%(disp_x))
+                            #print('### DBG ### disp_x: %d'%(disp_x))
                             self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
 
             nt_addr += 1
@@ -244,7 +245,7 @@ class PPU():
                         attribs = (self.nes.mem.ppu_mem[at_addr] & 0x0C)
                 else:
                     if (x_scroll & 0x0002) == 0:
-                        attribs = (self.nes.mem.ppu_mem[at_addr] & 0x30) << 2
+                        attribs = (self.nes.mem.ppu_mem[at_addr] & 0x30) >> 2
                     else:
                         attribs = (self.nes.mem.ppu_mem[at_addr] & 0xC0) >> 4
 

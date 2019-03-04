@@ -69,9 +69,10 @@ class DISPLAY():
 
     def init(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((self.nes.hight, self.nes.width))
+        self.screen = pygame.display.set_mode((self.nes.width, self.nes.hight))
         pygame.display.set_caption("NES Emulater")
         self.screen.fill([0x33,0x66,0x44])
+        pygame.display.update()
 
     def set_pixel(self, x, y, nes_color):
         if x >= self.nes.width:
@@ -135,7 +136,7 @@ class NES():
         # 10 ms
         self.delay = 0.001
 
-        self.debug = self.DISP_DBG | self.PPU_DBG
+        self.debug = 0#self.DISP_DBG | self.PPU_DBG
 
         self.lamenes_logs_fp = open(r'./lamenes_log', 'r')
         self.lamenes_logs_regs = self.lamenes_logs_fp.readline()[0:-1]
