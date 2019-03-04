@@ -35,7 +35,7 @@ class INPUT():
         self.readcnt = 0
 
     def reset(self):
-        for i in range(1, 8):
+        for i in range(8):
             self.pads[i] = 0x40
 
 
@@ -74,9 +74,9 @@ class DISPLAY():
         self.screen.fill([0x33,0x66,0x44])
 
     def set_pixel(self, x, y, nes_color):
-        if x > self.nes.width:
+        if x >= self.nes.width:
             return
-        if y > self.nes.hight:
+        if y >= self.nes.hight:
             return
         r = self.palette[nes_color].r
         g = self.palette[nes_color].g
@@ -201,7 +201,7 @@ class NES():
                 self.skipframe = 0
 
             # print('### DBG ### Before scanline')
-            for scanline in range(0, 240):
+            for scanline in range(240):
                 # print('### DBG ### Before check sprite, ppu_status: 0x%x'%(self.ppu.status))
                 if not self.ppu.sprite_zero():
                     self.ppu.check_sprite_hit(scanline)

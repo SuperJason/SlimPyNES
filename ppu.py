@@ -109,7 +109,7 @@ class PPU():
             else:
                 attribs = (self.nes.mem.ppu_mem[at_addr] & 0xC0) >> 4
 
-        if self.nes.debug & self.nes.PPU_BG_DBG:
+        if self.nes.cpu.dbg_cnt == 370815:
             print('[%d] nt_addr: %x, loopyT: %x, loopyV: %x, loopyX: %x'%(self.nes.cpu.dbg_cnt, nt_addr, self.loopyT, self.loopyV, self.loopyX))
 
         # draw 33 tiles in a scanline (32 + 1 for scrolling)
@@ -139,6 +139,19 @@ class PPU():
                 elif (bit1[i] == 1) and (bit2[i] == 1):
                     tile[i] = 3
 
+            if self.nes.cpu.dbg_cnt == 370815:
+                    print(' ### DBG ### %s(): %d, attribs: %x, tile: %x, %x, %x, %x, %x, %x, %x, %x'%(
+                        sys._getframe().f_code.co_name,
+                        sys._getframe().f_lineno,
+                        attribs,
+                        tile[0],
+                        tile[1],
+                        tile[2],
+                        tile[3],
+                        tile[4],
+                        tile[5],
+                        tile[6],
+                        tile[7]))
             # merge colour
             for i in range(8)[::-1]:
                 # pixel transparency check
@@ -160,8 +173,8 @@ class PPU():
                                     disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[self.loopyX + i])]
                                     self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
-                            disp_x = (tile_count << 3) + i + s_x
-                            disp_y = scanline + s_y
+                            disp_x = (tile_count << 3) + i
+                            disp_y = scanline
                             disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[self.loopyX + i])]
                             self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
             elif (tile_count == 32) and (self.loopyX != 0):
@@ -198,10 +211,12 @@ class PPU():
                                     disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
                                     self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
-                            #print(' ### DBG ### %s(): %d, tile_count: %d, loopyX: %d, scanline: %d, tile[%d]: %x'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, tile_count, self.loopyX, scanline, i, tile[i]))
+                            if self.nes.cpu.dbg_cnt == 370815:
+                                print(' ### DBG ### %s(): %d, tile_count: %d, loopyX: %d, scanline: %d, tile[%d]: %x'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, tile_count, self.loopyX, scanline, i, tile[i]))
                             disp_x = (tile_count << 3) + i - self.loopyX
                             disp_y = scanline
                             disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
+                            print('### DBG ### disp_x: %d'%(disp_x))
                             self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
 
             nt_addr += 1
@@ -376,6 +391,7 @@ class PPU():
                                     disp_x = x + i
                                     disp_y = y + j
                                     disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                    #print('---s 88 10 --- i: %d, j: %d, disp_x: %d'%(i, j, disp_x))
                                     self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
                             if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
@@ -393,6 +409,7 @@ class PPU():
                                         disp_x = x + i
                                         disp_y = y + j
                                         disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                        #print('---s 88 11 --- i: %d, j: %d, disp_x: %d'%(i, j, disp_x))
                                         self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
         else:
             # 8 x 16 sprites
@@ -475,6 +492,7 @@ class PPU():
                                     disp_x = x + i
                                     disp_y = y + j
                                     disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                    #print('---s 816 10 --- i: %d, j: %d, disp_x: %d'%(i, j, disp_x))
                                     self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
                             # draw the sprite pixel if the background pixel is transparent (0)
@@ -492,6 +510,7 @@ class PPU():
                                         disp_x = x + i
                                         disp_y = y + j
                                         disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                        #print('---s 816 11 --- i: %d, j: %d, disp_x: %d'%(i, j, disp_x))
                                         self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
 
 

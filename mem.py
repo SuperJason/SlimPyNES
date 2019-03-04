@@ -145,7 +145,7 @@ class MEMORY():
 
         # transfer 256 bytes of memory into sprite_memory
         if addr == 0x4014:
-            for i in range(0, 255):
+            for i in range(256):
                 self.sprite_mem[i] = self.cpu_mem[0x100 * value + i]
             return
 
