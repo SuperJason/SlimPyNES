@@ -109,15 +109,13 @@ class PPU():
             else:
                 attribs = (self.nes.mem.ppu_mem[at_addr] & 0xC0) >> 4
 
-        if False: #self.nes.cpu.dbg_cnt == 370815:
+        if self.nes.debug & self.nes.PPU_BG_DBG:
             print('[%d] nt_addr: %x, loopyT: %x, loopyV: %x, loopyX: %x'%(self.nes.cpu.dbg_cnt, nt_addr, self.loopyT, self.loopyV, self.loopyX))
-            print('[%d] y_scroll: %x, x_scroll: %x, mem[%x]: %x, attribs: %x'%(self.nes.cpu.dbg_cnt, y_scroll, x_scroll, at_addr, self.nes.mem.ppu_mem[at_addr], attribs))
 
         # draw 33 tiles in a scanline (32 + 1 for scrolling)
         for tile_count in range(33):
             # nt_data (ppu_memory[nt_addr]) * 16 = pattern table address
             pt_addr = (self.nes.mem.ppu_mem[nt_addr] << 4) + ((self.loopyV & 0x7000) >> 12)
-            #print('### DBG ### ppu_mem[%x]: %x, pt_addr: %d'%(nt_addr, self.nes.mem.ppu_mem[nt_addr], pt_addr))
 
             # check if the pattern address needs to be high
             if self.background_addr_hi():
@@ -127,7 +125,6 @@ class PPU():
             for i in range(8)[::-1]:
                 bit1[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr] >> i) & 0x01)
                 bit2[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr + 8] >> i) & 0x01)
-                #print(' ### DBG ### ppu_mem[%x]: %x, ppu_mem[%x]: %x, bit1[%d]: %d, bit2[%d]: %d'%(pt_addr, self.nes.mem.ppu_mem[pt_addr], pt_addr + 8, self.nes.mem.ppu_mem[pt_addr + 8], 7 - i, bit1[7 - i], 7 - i, bit2[7 - i]))
 
             # merge bits
             for i in range(8):
@@ -140,19 +137,6 @@ class PPU():
                 elif (bit1[i] == 1) and (bit2[i] == 1):
                     tile[i] = 3
 
-            if False: #self.nes.cpu.dbg_cnt == 370815:
-                print(' ### DBG ### %s(), tile_count: %d, attribs: %x, tile: %x, %x, %x, %x, %x, %x, %x, %x'%(
-                        sys._getframe().f_code.co_name,
-                        tile_count,
-                        attribs,
-                        tile[0],
-                        tile[1],
-                        tile[2],
-                        tile[3],
-                        tile[4],
-                        tile[5],
-                        tile[6],
-                        tile[7]))
             # merge colour
             for i in range(8)[::-1]:
                 # pixel transparency check
@@ -212,12 +196,9 @@ class PPU():
                                     disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
                                     self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
-                            if False: #self.nes.cpu.dbg_cnt == 370815:
-                                print(' ### DBG ### %s(), tile_count: %d, loopyX: %d, scanline: %d, tile[%d]: %x'%(sys._getframe().f_code.co_name, tile_count, self.loopyX, scanline, i, tile[i]))
                             disp_x = (tile_count << 3) + i - self.loopyX
                             disp_y = scanline
                             disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
-                            #print('### DBG ### disp_x: %d'%(disp_x))
                             self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
 
             nt_addr += 1
@@ -274,9 +255,7 @@ class PPU():
 
     def check_sprite_hit(self, scanline):
         # sprite zero detection
-        # print(' ### DBG ### check_sprite_hit: scanline: %d'%(scanline))
         for i in range(self.nes.width):
-            # print(' ### DBG ### bgcache[%d][%d] = 0x%x, sprcache[%d][%d] = 0x%x'%(i, scanline - 1, self.bgcache[i][scanline - 1], i, scanline - 1, self.sprcache[i][scanline - 1]))
             if (self.bgcache[i][scanline - 1] > 0) and (self.sprcache[i][scanline - 1] > 0):
                 # set the sprite zero flag
                 if self.nes.debug & self.nes.PPU_SPR_DBG:
@@ -308,8 +287,6 @@ class PPU():
         if self.nes.debug & self.nes.PPU_SPR_DBG:
             print('[%d] (spritedebug [%d]): pattern_number = %d [hex %x], sprite_patterntable start addr = %x, ppu mem value = %x'%(self.nes.cpu.dbg_cnt, spr_nr, pattern_num, pattern_num, sprite_pattern_table + (pattern_num * 16), self.nes.mem.ppu_mem[sprite_pattern_table + (pattern_num * 16)]))
 
-        #for i in range(8):
-        #    print('### DBG ### spr_start: %d, memory[%d] = 0x%x, memory[%d] = 0x%x'%(spr_start, spr_start + i, self.nes.mem.ppu_mem[spr_start + i], spr_start + 8 + i, self.nes.mem.ppu_mem[spr_start + 8 + i]))
         if not self.sprite_16():
             # 8 x 8 sprites
             # fetch bits
@@ -345,7 +322,6 @@ class PPU():
                         sprite[i][j] = 2
                     elif (bit1[i][j] == 1) and (bit2[i][j] == 1):
                         sprite[i][j] = 3
-                    #print('### DBG ### sprite[%d][%d] = 0x%x'%(i, j, sprite[i][j]))
 
             # add sprite attribute colors
             if not bool(flip_spr_hor) and not bool(flip_spr_ver):
@@ -374,7 +350,6 @@ class PPU():
                     # cache pixel for sprite zero detection
                     if spr_nr == 0:
                         self.sprcache[x + i][y + j] = sprite[i][j]
-                        #print(' ### DBG ### %s(): %d, sprcache[%d][%d] = 0x%x, i: %d, j: %d, x: %d, y: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, x + i, y + j, self.sprcache[x + i][y + j], i, j ,x, y))
 
                     if sprite[i][j] != 0:
                         # sprite priority check
@@ -392,7 +367,6 @@ class PPU():
                                     disp_x = x + i
                                     disp_y = y + j
                                     disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-                                    #print('---s 88 10 --- i: %d, j: %d, disp_x: %d'%(i, j, disp_x))
                                     self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
                             if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
@@ -410,7 +384,6 @@ class PPU():
                                         disp_x = x + i
                                         disp_y = y + j
                                         disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-                                        #print('---s 88 11 --- i: %d, j: %d, disp_x: %d'%(i, j, disp_x))
                                         self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
         else:
             # 8 x 16 sprites
@@ -475,7 +448,6 @@ class PPU():
                     # cache pixel for sprite zero detection
                     if spr_nr == 0:
                         self.sprcache[x + i][y + j] = sprite[i][j]
-                        #print(' ### DBG ### %s(): %d, sprcache[%d][%d] = 0x%x, i: %d, j: %d, x: %d, y: %d'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, x + i, y + j, self.sprcache[x + i][y + j], i, j ,x, y))
 
                     if sprite[i][j] != 0:
                         # sprite priority check
@@ -493,7 +465,6 @@ class PPU():
                                     disp_x = x + i
                                     disp_y = y + j
                                     disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-                                    #print('---s 816 10 --- i: %d, j: %d, disp_x: %d'%(i, j, disp_x))
                                     self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
                             # draw the sprite pixel if the background pixel is transparent (0)
@@ -511,7 +482,6 @@ class PPU():
                                         disp_x = x + i
                                         disp_y = y + j
                                         disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-                                        #print('---s 816 11 --- i: %d, j: %d, disp_x: %d'%(i, j, disp_x))
                                         self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
 
 
