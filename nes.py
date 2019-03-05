@@ -104,6 +104,7 @@ class NES():
     PAL_VBLANK_CYCLE_TIMEOUT = (313 - 240) * PAL_VBLANK_INT / 313
 
     # Emulater Debug
+    CPU_NMI_DBG = 0x02
     PPU_DBG = 0x10
     PPU_BG_DBG = 0x20
     PPU_SPR_DBG = 0x40
@@ -174,7 +175,7 @@ class NES():
 
         self.cpu_is_running = 1
         while(self.cpu_is_running):
-            print(' -- NES CPU Loop Start -- ')
+            print('[%d] -- NES CPU Loop Start -- '%(self.cpu.dbg_cnt))
             self.cpu.execute(nes.start_init)
 
             # Set ppu status bit7 to 1 and enter vblank
@@ -183,9 +184,9 @@ class NES():
             counter += self.cpu.execute(12)
 
             #print('debug [%d] --- entering VBLANK! ---'%(self.cpu.dbg_cnt))
-            #print('ppu status: %x, ppu control_1: %x, ppu control_2: %x'%(self.ppu.status, self.ppu.control_1, self.ppu.control_2))
             if self.ppu.exec_nmi_on_vblank():
-                print('[%d] vblank = on'%(self.cpu.dbg_cnt))
+                if self.debug & self.CPU_NMI_DBG:
+                    print('[%d] vblank = on'%(self.cpu.dbg_cnt))
                 counter += self.cpu.nmi(counter);
 
             counter += self.cpu.execute(self.vblank_cycle_timeout)
@@ -201,19 +202,14 @@ class NES():
             if self.skipframe > self.frameskip:
                 self.skipframe = 0
 
-            # print('### DBG ### Before scanline')
             for scanline in range(240):
-                # print('### DBG ### Before check sprite, ppu_status: 0x%x'%(self.ppu.status))
                 if not self.ppu.sprite_zero():
                     self.ppu.check_sprite_hit(scanline)
 
-                # print('### DBG ### Before render_background: scanline: %d'%(scanline))
                 self.ppu.render_background(scanline)
 
-                # print('### DBG ### Before cpu excute scanline_refresh: %d'%(self.scanline_refresh))
                 counter += self.cpu.execute(self.scanline_refresh)
 
-            # print('### DBG ### Before render_sprites')
             self.ppu.render_sprites()
 
             if self.skipframe == 0:

@@ -179,7 +179,7 @@ class PPU():
                         else:
                             disp_x = (tile_count << 3) + i - self.loopyX
                             disp_y = scanline
-                            disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[self.loopyX + i])]
+                            disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
                             self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
             else:
                 for i in range(8):
