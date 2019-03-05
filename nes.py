@@ -176,7 +176,7 @@ class NES():
         self.cpu_is_running = 1
         while(self.cpu_is_running):
             print('[%d] -- NES CPU Loop Start -- '%(self.cpu.dbg_cnt))
-            self.cpu.execute(nes.start_init)
+            self.cpu.execute(self.start_init)
 
             # Set ppu status bit7 to 1 and enter vblank
             self.ppu.status = 0x80

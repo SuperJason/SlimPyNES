@@ -151,8 +151,8 @@ class PPU():
                     # draw pixel
                     if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
                         if self.scale > 1:
-                            for s_y in range(scale):
-                                for s_x in range(scale):
+                            for s_y in range(self.scale):
+                                for s_x in range(self.scale):
                                     disp_x = ((tile_count << 3) + i) * self.scale + s_x
                                     disp_y = scanline * self.scale + s_y
                                     disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[self.loopyX + i])]
@@ -170,8 +170,8 @@ class PPU():
                     # draw pixel
                     if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
                         if self.scale > 1:
-                            for s_y in range(scale):
-                                for s_x in range(scale):
+                            for s_y in range(self.scale):
+                                for s_x in range(self.scale):
                                     disp_x = ((tile_count << 3) + i - self.loopyX) * self.scale + s_x
                                     disp_y = scanline * self.scale + s_y
                                     disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
@@ -189,8 +189,8 @@ class PPU():
                     # draw pixel
                     if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
                         if self.scale > 1:
-                            for s_y in range(scale):
-                                for s_x in range(scale):
+                            for s_y in range(self.scale):
+                                for s_x in range(self.scale):
                                     disp_x = ((tile_count << 3) + i - self.loopyX) * self.scale + s_x
                                     disp_y = scanline * self.scale + s_y
                                     disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
@@ -357,8 +357,8 @@ class PPU():
                             if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                 # draw pixel
                                 if self.scale > 1:
-                                    for s_y in range(scale):
-                                        for s_x in range(scale):
+                                    for s_y in range(self.scale):
+                                        for s_x in range(self.scale):
                                             disp_x = (x + i) * self.scale + s_x
                                             disp_y = (y + j) * self.scale + s_y
                                             disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
@@ -374,8 +374,8 @@ class PPU():
                                 if self.bgcache[x + i][y + j] == 0:
                                     # draw pixel
                                     if self.scale > 1:
-                                        for s_y in range(scale):
-                                            for s_x in range(scale):
+                                        for s_y in range(self.scale):
+                                            for s_x in range(self.scale):
                                                 disp_x = (x + i) * self.scale + s_x
                                                 disp_y = (y + j) * self.scale + s_y
                                                 disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
@@ -455,8 +455,8 @@ class PPU():
                             if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                 # draw pixel
                                 if self.scale > 1:
-                                    for s_y in range(scale):
-                                        for s_x in range(scale):
+                                    for s_y in range(self.scale):
+                                        for s_x in range(self.scale):
                                             disp_x = (x + i) * self.scale + s_x
                                             disp_y = (y + j) * self.scale + s_y
                                             disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
@@ -472,8 +472,8 @@ class PPU():
                                 if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                     # draw pixel
                                     if self.scale > 1:
-                                        for s_y in range(scale):
-                                            for s_x in range(scale):
+                                        for s_y in range(self.scale):
+                                            for s_x in range(self.scale):
                                                 disp_x = (x + i) * self.scale + s_x
                                                 disp_y = (y + j) * self.scale + s_y
                                                 disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]

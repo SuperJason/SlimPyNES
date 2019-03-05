@@ -1254,7 +1254,7 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         self.addr = self.mem.cpu_mem[pc] + self.x_reg
-        tmp = (self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr]
+        tmp = (self.mem.cpu_mem[self.addr + 1] << 8) | self.mem.cpu_mem[self.addr]
         self.accumulator ^= self.mem.read(tmp)
         self.sign_flag = bool(self.accumulator & 0x80)
         self.zero_flag = not bool(self.accumulator)
@@ -1271,7 +1271,7 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         self.addr = self.mem.cpu_mem[pc]
-        tmp = ((self.mem.cpu_mem[addr + 1] << 8) | self.mem.cpu_mem[addr]) + self.y_reg
+        tmp = ((self.mem.cpu_mem[self.addr + 1] << 8) | self.mem.cpu_mem[self.addr]) + self.y_reg
         self.accumulator ^= self.mem.read(tmp)
         self.sign_flag = bool(self.accumulator & 0x80)
         self.zero_flag = not bool(self.accumulator)
