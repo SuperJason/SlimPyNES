@@ -24,7 +24,6 @@ class CPU():
 
     # Stack Push
     def push(self, data):
-        #print(" ### DBG ### PUSH data: 0x%x"%(data))
         self.mem.write(self.stack_pointer + 0x100, data)
         self.stack_pointer -= 1
 
@@ -32,7 +31,6 @@ class CPU():
     def pull(self):
         self.stack_pointer += 1
         self.addr = self.mem.read(self.stack_pointer + 0x100)
-        #print(" ### DBG ### PULL addr: 0x%x"%(self.addr))
 
     # Get the cpu flags
     def get_sr(self):
@@ -50,7 +48,6 @@ class CPU():
             flags |= 0x02
         if self.carry_flag:
             flags |= 0x01
-        #print(" ### DBG ### GET SR flags: 0x%x"%(flags))
         return flags
 
     # Set the cpu flags
@@ -158,7 +155,6 @@ class CPU():
         print(regs_str)
         print(flags_str)
         print(ops_str)
-        #self.nes.log_cmp_debug(regs_str, flags_str, ops_str)
 
 
 # ----- OpCode Functions -----
@@ -2967,15 +2963,12 @@ class CPU():
         return cycles - 7
 
     def execute(self, cycles = 1):
-        #print(" -- CPU Execute -- Start cycles: %d"%(cycles))
         cycle_count = round(cycles)
         while(cycle_count > 0):
             self.dbg_cnt += 1
             self.update_status_reg()
             op = self.mem.cpu_mem[self.program_counter]
             self.program_counter += 1
-            #print(' -- CPU Execute -- cnt: %d, pc: 0x%x, instruction: 0x%x'%(cycle_count, self.program_counter, op))
-            #print(' -- CPU Execute -- [%d] loopyT: %x, loopyV: %x, loopyX: %x, ppu_status: %x'%(self.nes.cpu.dbg_cnt, self.nes.ppu.loopyT, self.nes.ppu.loopyV, self.nes.ppu.loopyX, self.nes.ppu.status))
             if (op in self.opcode):
                 self.program_counter, cycle_count = self.opcode[op](self, self.program_counter, cycle_count)
             else:

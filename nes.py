@@ -139,36 +139,6 @@ class NES():
 
         self.debug = 0
 
-        self.lamenes_logs_fp = open(r'./lamenes_log', 'r')
-        self.lamenes_logs_regs = self.lamenes_logs_fp.readline()[0:-1]
-        self.lamenes_logs_flags = self.lamenes_logs_fp.readline()[0:-1]
-        self.lamenes_logs_ops = self.lamenes_logs_fp.readline()[0:-1]
-        self.lamenes_logs_last_regs = self.lamenes_logs_regs
-        self.lamenes_logs_last_flags = self.lamenes_logs_flags
-        self.lamenes_logs_last_ops = self.lamenes_logs_ops
-
-    def log_cmp_debug(self, regs, flags, ops):
-        if self.lamenes_logs_regs != regs or self.lamenes_logs_flags != flags or self.lamenes_logs_ops != ops: 
-            print('---- logs is different ---------------')
-            print(self.lamenes_logs_last_regs)
-            print(self.lamenes_logs_last_flags)
-            print(self.lamenes_logs_last_ops)
-            print(self.lamenes_logs_regs)
-            print(self.lamenes_logs_flags)
-            print(self.lamenes_logs_ops)
-            print('-------------------')
-            #print(regs)
-            #print(flags)
-            #print(ops)
-            exit()
-        else:
-            self.lamenes_logs_last_regs = self.lamenes_logs_regs
-            self.lamenes_logs_last_flags = self.lamenes_logs_flags
-            self.lamenes_logs_last_ops = self.lamenes_logs_ops
-            self.lamenes_logs_regs = self.lamenes_logs_fp.readline()[0:-1]
-            self.lamenes_logs_flags = self.lamenes_logs_fp.readline()[0:-1]
-            self.lamenes_logs_ops = self.lamenes_logs_fp.readline()[0:-1]
-
     def start(self):
         counter = 0
         print(' -- NES Emulator Stating... --')

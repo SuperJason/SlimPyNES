@@ -98,8 +98,6 @@ class MEMORY():
                 self.cpu_mem[addr] = value
                 return
 
-        #print(' ### DBG ### %s(): %d, [%d] ppu_mem[2000]: %x'%(sys._getframe().f_code.co_name, sys._getframe().f_lineno, self.nes.cpu.dbg_cnt, self.nes.mem.ppu_mem[0x2000]))
-
         # vram i/o register
         if addr == 0x2007:
             # if the vram_write_flag is on, vram writes should ignored
