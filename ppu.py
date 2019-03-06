@@ -79,8 +79,6 @@ class PPU():
         print(' -- PPU Reset --')
 
     def render_background(self, scanline):
-        bit1 = np.zeros(8, np.uint8)
-        bit2 = np.zeros(8, np.uint8)
         tile = np.zeros(8, np.uint8)
 
         self.current_scanline = scanline
@@ -122,26 +120,31 @@ class PPU():
                 pt_addr += 0x1000
 
             # fetch bits from pattern table
-            for i in range(8)[::-1]:
-                bit1[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr] >> i) & 0x01)
-                bit2[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr + 8] >> i) & 0x01)
+            #for i in range(8)[::-1]:
+            #    bit1[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr] >> i) & 0x01)
+            #    bit2[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr + 8] >> i) & 0x01)
+            bit1 = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[pt_addr]) > 0) * 1)[::-1]
+            bit2 = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[pt_addr + 8]) > 0) * 1)[::-1] * 2
 
             # merge bits
-            for i in range(8):
-                if (bit1[i] == 0) and (bit2[i] == 0):
-                    tile[i] = 0
-                elif (bit1[i] == 1) and (bit2[i] == 0):
-                    tile[i] = 1
-                elif (bit1[i] == 0) and (bit2[i] == 1):
-                    tile[i] = 2
-                elif (bit1[i] == 1) and (bit2[i] == 1):
-                    tile[i] = 3
+            #for i in range(8):
+            #    if (bit1[i] == 0) and (bit2[i] == 0):
+            #        tile[i] = 0
+            #    elif (bit1[i] == 1) and (bit2[i] == 0):
+            #        tile[i] = 1
+            #    elif (bit1[i] == 0) and (bit2[i] == 1):
+            #        tile[i] = 2
+            #    elif (bit1[i] == 1) and (bit2[i] == 1):
+            #        tile[i] = 3
+            tile = bit1 + bit2
 
             # merge colour
-            for i in range(8)[::-1]:
-                # pixel transparency check
-                if tile[7 - i] != 0:
-                    tile[7 -i] += attribs
+            #for i in range(8)[::-1]:
+            #    # pixel transparency check
+            #    if tile[7 - i] != 0:
+            #        tile[7 -i] += attribs
+            tmp_tile = (tile > 0) * attribs
+            tile = tile + tmp_tile
 
             if (tile_count == 0) and (self.loopyX != 0):
                 for i in range(8 - self.loopyX):
