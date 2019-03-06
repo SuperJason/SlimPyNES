@@ -10,6 +10,9 @@ from ppu import PPU
 
 import pygame
 from pygame.locals import *
+from pygame import surfarray
+
+import numpy as np
 
 class INPUT():
     def __init__(self, nes):
@@ -66,6 +69,7 @@ class DISPLAY():
     def __init__(self, nes):
         self.nes = nes
         self.screen = None
+        self.surf = np.zeros((self.nes.width, self.nes.hight, 3), dtype=np.uint8)
 
     def init(self):
         pygame.init()
@@ -79,15 +83,18 @@ class DISPLAY():
             return
         if y >= self.nes.hight:
             return
-        r = self.palette[nes_color].r
-        g = self.palette[nes_color].g
-        b = self.palette[nes_color].b
-        if self.nes.debug & self.nes.DISP_DBG:
-            print('[%d] --- x: %d, y: %d, nes_color: %d --- r: %x, g: %x, b: %x ---'%(self.nes.cpu.dbg_cnt, x, y, nes_color, r, g, b))
-        self.screen.set_at([x, y], [r, g, b])
+        self.surf[x][y][0] = self.palette[nes_color].r
+        self.surf[x][y][1] = self.palette[nes_color].g
+        self.surf[x][y][2] = self.palette[nes_color].b
+#        r = self.palette[nes_color].r
+#        g = self.palette[nes_color].g
+#        b = self.palette[nes_color].b
+#        if self.nes.debug & self.nes.DISP_DBG:
+#            print('[%d] --- x: %d, y: %d, nes_color: %d --- r: %x, g: %x, b: %x ---'%(self.nes.cpu.dbg_cnt, x, y, nes_color, r, g, b))
 
     def update(self):
-        pygame.display.update()
+        surfarray.blit_array(self.screen, self.surf)
+        pygame.display.flip()
 
 
 class NES():
