@@ -150,18 +150,10 @@ class PPU():
 
                     # draw pixel
                     if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
-                        if self.scale > 1:
-                            for s_y in range(self.scale):
-                                for s_x in range(self.scale):
-                                    disp_x = ((tile_count << 3) + i) * self.scale + s_x
-                                    disp_y = scanline * self.scale + s_y
-                                    disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[self.loopyX + i])]
-                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
-                        else:
-                            disp_x = (tile_count << 3) + i
-                            disp_y = scanline
-                            disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[self.loopyX + i])]
-                            self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
+                        disp_x = (tile_count << 3) + i
+                        disp_y = scanline
+                        disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[self.loopyX + i])]
+                        self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
             elif (tile_count == 32) and (self.loopyX != 0):
                 for i in range(self.loopyX):
                     # cache pixel
@@ -169,18 +161,10 @@ class PPU():
 
                     # draw pixel
                     if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
-                        if self.scale > 1:
-                            for s_y in range(self.scale):
-                                for s_x in range(self.scale):
-                                    disp_x = ((tile_count << 3) + i - self.loopyX) * self.scale + s_x
-                                    disp_y = scanline * self.scale + s_y
-                                    disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
-                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
-                        else:
-                            disp_x = (tile_count << 3) + i - self.loopyX
-                            disp_y = scanline
-                            disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
-                            self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
+                        disp_x = (tile_count << 3) + i - self.loopyX
+                        disp_y = scanline
+                        disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
+                        self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
             else:
                 for i in range(8):
                     # cache pixel
@@ -188,18 +172,10 @@ class PPU():
 
                     # draw pixel
                     if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
-                        if self.scale > 1:
-                            for s_y in range(self.scale):
-                                for s_x in range(self.scale):
-                                    disp_x = ((tile_count << 3) + i - self.loopyX) * self.scale + s_x
-                                    disp_y = scanline * self.scale + s_y
-                                    disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
-                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
-                        else:
-                            disp_x = (tile_count << 3) + i - self.loopyX
-                            disp_y = scanline
-                            disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
-                            self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
+                        disp_x = (tile_count << 3) + i - self.loopyX
+                        disp_y = scanline
+                        disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
+                        self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
 
             nt_addr += 1
             x_scroll += 1
@@ -356,35 +332,19 @@ class PPU():
                         if not disp_spr_back:
                             if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                 # draw pixel
-                                if self.scale > 1:
-                                    for s_y in range(self.scale):
-                                        for s_x in range(self.scale):
-                                            disp_x = (x + i) * self.scale + s_x
-                                            disp_y = (y + j) * self.scale + s_y
-                                            disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-                                            self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
-                                else:
-                                    disp_x = x + i
-                                    disp_y = y + j
-                                    disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
+                                disp_x = x + i
+                                disp_y = y + j
+                                disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
                             if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                 # draw the sprite pixel if the background pixel is transparent (0)
                                 if self.bgcache[x + i][y + j] == 0:
                                     # draw pixel
-                                    if self.scale > 1:
-                                        for s_y in range(self.scale):
-                                            for s_x in range(self.scale):
-                                                disp_x = (x + i) * self.scale + s_x
-                                                disp_y = (y + j) * self.scale + s_y
-                                                disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-                                                self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
-                                    else:
-                                        disp_x = x + i
-                                        disp_y = y + j
-                                        disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-                                        self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
+                                    disp_x = x + i
+                                    disp_y = y + j
+                                    disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
         else:
             # 8 x 16 sprites
             # fetch bits
@@ -454,35 +414,19 @@ class PPU():
                         if not disp_spr_back:
                             if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                 # draw pixel
-                                if self.scale > 1:
-                                    for s_y in range(self.scale):
-                                        for s_x in range(self.scale):
-                                            disp_x = (x + i) * self.scale + s_x
-                                            disp_y = (y + j) * self.scale + s_y
-                                            disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-                                            self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
-                                else:
-                                    disp_x = x + i
-                                    disp_y = y + j
-                                    disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
+                                disp_x = x + i
+                                disp_y = y + j
+                                disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
                         else:
                             # draw the sprite pixel if the background pixel is transparent (0)
                             if self.bgcache[x + i][y + j] == 0:
                                 if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                                     # draw pixel
-                                    if self.scale > 1:
-                                        for s_y in range(self.scale):
-                                            for s_x in range(self.scale):
-                                                disp_x = (x + i) * self.scale + s_x
-                                                disp_y = (y + j) * self.scale + s_y
-                                                disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-                                                self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
-                                    else:
-                                        disp_x = x + i
-                                        disp_y = y + j
-                                        disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-                                        self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
+                                    disp_x = x + i
+                                    disp_y = y + j
+                                    disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
+                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
 
 
     def render_sprites(self):
