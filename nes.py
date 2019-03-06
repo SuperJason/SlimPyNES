@@ -109,6 +109,7 @@ class NES():
     PPU_BG_DBG = 0x20
     PPU_SPR_DBG = 0x40
     DISP_DBG = 0x100
+    NES_TIME_DBG = 0x2000
 
     def __init__(self, cpu=None, ppu=None, mem=None, rom=None, disp=None, in_put=None):
         self.cpu = cpu
@@ -137,7 +138,7 @@ class NES():
         # 10 ms
         self.delay = 0.001
 
-        self.debug = 0
+        self.debug = self.NES_TIME_DBG
 
     def start(self):
         counter = 0
@@ -145,7 +146,9 @@ class NES():
 
         self.cpu_is_running = 1
         while(self.cpu_is_running):
-            print('[%d] -- NES CPU Loop Start -- '%(self.cpu.dbg_cnt))
+            if self.debug & self.NES_TIME_DBG:
+                time_start = time.time()
+                print('[%d] -- NES CPU Loop Start -- '%(self.cpu.dbg_cnt))
             self.cpu.execute(self.start_init)
 
             # Set ppu status bit7 to 1 and enter vblank
@@ -188,6 +191,9 @@ class NES():
             self.skipframe += 1
 
             #time.sleep(self.delay)
+            if self.debug & self.NES_TIME_DBG:
+                time_now = time.time()
+                print(time_now - time_start)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
