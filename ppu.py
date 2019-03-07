@@ -157,7 +157,12 @@ class PPU():
 #                       disp_y = scanline
 #                       disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[self.loopyX + i])]
 #                       self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
-                self.bgcache[(tile_count << 3):((tile_count << 3) + 8 - self.loopyX)][scanline] = tile[self.loopyX:self.loopyX + 8]
+                np.transpose(self.bgcache)[scanline][(tile_count << 3):((tile_count << 3) + 8 - self.loopyX)] = tile[self.loopyX:8]
+                disp_color = self.nes.mem.ppu_mem[0x3f00 + tile[self.loopyX:8]]
+                if tile_count < 32 and (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
+                    np.transpose(self.nes.disp.surf)[0][scanline][(tile_count << 3):((tile_count << 3) + 8 - self.loopyX)] = np.transpose(self.nes.disp.palette[disp_color])[0]
+                    np.transpose(self.nes.disp.surf)[1][scanline][(tile_count << 3):((tile_count << 3) + 8 - self.loopyX)] = np.transpose(self.nes.disp.palette[disp_color])[1]
+                    np.transpose(self.nes.disp.surf)[2][scanline][(tile_count << 3):((tile_count << 3) + 8 - self.loopyX)] = np.transpose(self.nes.disp.palette[disp_color])[2]
             elif (tile_count == 32) and (self.loopyX != 0):
 #               for i in range(self.loopyX):
 #                   # cache pixel
@@ -169,7 +174,12 @@ class PPU():
 #                       disp_y = scanline
 #                       disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
 #                       self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
-                self.bgcache[(tile_count << 3):((tile_count << 3) + 8)][scanline] = tile[0:8]
+                np.transpose(self.bgcache)[scanline][(tile_count << 3) - self.loopyX:((tile_count << 3) + 8 - self.loopyX)] = tile[0:8]
+                disp_color = self.nes.mem.ppu_mem[0x3f00 + tile]
+                if tile_count < 32 and (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
+                    np.transpose(self.nes.disp.surf)[0][scanline][(tile_count << 3) - self.loopyX:((tile_count << 3) + 8 - self.loopyX)] = np.transpose(self.nes.disp.palette[disp_color])[0]
+                    np.transpose(self.nes.disp.surf)[1][scanline][(tile_count << 3) - self.loopyX:((tile_count << 3) + 8 - self.loopyX)] = np.transpose(self.nes.disp.palette[disp_color])[1]
+                    np.transpose(self.nes.disp.surf)[2][scanline][(tile_count << 3) - self.loopyX:((tile_count << 3) + 8 - self.loopyX)] = np.transpose(self.nes.disp.palette[disp_color])[2]
             else:
 #               for i in range(8):
 #                   # cache pixel
@@ -181,17 +191,25 @@ class PPU():
 #                       disp_y = scanline
 #                       disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
 #                       self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
-                np.transpose(self.bgcache)[scanline][(tile_count << 3):((tile_count << 3) + 8)] = tile[0:8]
+                np.transpose(self.bgcache)[scanline][(tile_count << 3) - self.loopyX:((tile_count << 3) + 8 - self.loopyX)] = tile[0:8]
                 disp_color = self.nes.mem.ppu_mem[0x3f00 + tile]
                 #np.transpose(self.nes.disp.surf)[scanline][(tile_count << 3):((tile_count << 3) + 8)] = self.nes.disp.palette[disp_color]
-                print('----------------------------------------------------------------------------------------------------')
-                print(np.transpose(self.nes.disp.surf)[scanline][(tile_count << 3):((tile_count << 3) + 8)])
-                print('----------------------------------------------------------------------------------------------------')
-                print(self.nes.disp.palette[disp_color])
-                print('----------------------------------------------------------------------------------------------------')
-                print(self.nes.disp.surf.shape)
-                print(np.transpose(self.nes.disp.surf).shape)
-                exit()
+                if tile_count < 32 and (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
+                    #print('----- tile_count: %d -- scanline: %d ----------------------------------------------------------'%(tile_count, scanline))
+                    #print('----------------------------------------------------------------------------------------------------')
+                    #print(self.nes.disp.palette[disp_color])
+                    #print('----------------------------------------------------------------------------------------------------')
+                    #print(self.nes.disp.surf.shape)
+                    #print(np.transpose(self.nes.disp.surf).shape)
+                    #print('----------------------------------------------------------------------------------------------------')
+                    #print(np.transpose(self.nes.disp.surf)[0][scanline].shape)
+                    #print('----------------------------------------------------------------------------------------------------')
+                    #print(np.transpose(self.nes.disp.surf)[0][scanline][(tile_count << 3):((tile_count << 3) + 8)].shape)
+                    #print(np.transpose(self.nes.disp.palette[disp_color])[0].shape)
+                    np.transpose(self.nes.disp.surf)[0][scanline][(tile_count << 3) - self.loopyX:((tile_count << 3) + 8 - self.loopyX)] = np.transpose(self.nes.disp.palette[disp_color])[0]
+                    np.transpose(self.nes.disp.surf)[1][scanline][(tile_count << 3) - self.loopyX:((tile_count << 3) + 8 - self.loopyX)] = np.transpose(self.nes.disp.palette[disp_color])[1]
+                    np.transpose(self.nes.disp.surf)[2][scanline][(tile_count << 3) - self.loopyX:((tile_count << 3) + 8 - self.loopyX)] = np.transpose(self.nes.disp.palette[disp_color])[2]
+                #exit()
 
             nt_addr += 1
             x_scroll += 1

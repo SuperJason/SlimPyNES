@@ -43,11 +43,6 @@ class INPUT():
 
 
 class DISPLAY():
-    class PALETTE():
-        def __init__(self, r=0, g=0, b=0):
-            self.r = r
-            self.g = g
-            self.b = b
     palette = np.array([
                 [0x80,0x80,0x80],[0x00,0x3D,0xA6],[0x00,0x12,0xB0],[0x44,0x00,0x96],
                 [0xA1,0x00,0x5E],[0xC7,0x00,0x28],[0xBA,0x06,0x00],[0x8C,0x17,0x00],
@@ -83,9 +78,9 @@ class DISPLAY():
             return
         if y >= self.nes.hight:
             return
-        self.surf[x][y][0] = self.palette[nes_color].r
-        self.surf[x][y][1] = self.palette[nes_color].g
-        self.surf[x][y][2] = self.palette[nes_color].b
+        self.surf[x][y][0] = self.palette[nes_color][0]
+        self.surf[x][y][1] = self.palette[nes_color][1]
+        self.surf[x][y][2] = self.palette[nes_color][2]
 #        r = self.palette[nes_color].r
 #        g = self.palette[nes_color].g
 #        b = self.palette[nes_color].b
