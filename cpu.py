@@ -2004,14 +2004,15 @@ class CPU():
 
 # PHP  -  Push Processor Status on Stack
     def push_ps(self, pc, cycle_count): # 0x08
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
+        name = 'PHP'
+        ext = 'NODATA'
         size = 1
         cycle = 3
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.push(self.get_sr())
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -2036,14 +2037,17 @@ class CPU():
 
 # PLP  -  Pull Processor Status from Stack
     def pull_ps(self, pc, cycle_count): # 0x28
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
+        name = 'PLP'
+        ext = 'NODATA'
         size = 1
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.pull()
+        self.addr = self.mem.read(self.stack_pointer + 0x100)
+        self.set_sr(self.addr)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -2478,14 +2482,15 @@ class CPU():
 
 # SED  -  Set Decimal Mode
     def set_d_mode(self, pc, cycle_count): # 0xF8
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
+        name = 'SED'
+        ext = 'NODATA'
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.decimal_flag = True
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -2580,14 +2585,17 @@ class CPU():
         cycle_count -= cycle
         return pc, cycle_count
     def store_idi(self, pc, cycle_count): # 0x81
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'STA'
+        ext = 'IDI'
+        size = 2
         cycle = 6
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[pc] + self.x_reg
+        tmp = (self.mem.cpu_mem[self.addr + 1] << 8) | self.mem.cpu_mem[self.addr]
+        self.mem.write(tmp, self.accumulator)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -2624,14 +2632,16 @@ class CPU():
         return pc, cycle_count
 
     def store_zpiy(self, pc, cycle_count): # 0x96
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
-        size = 1
+        name = 'STX'
+        ext = 'ZPIY'
+        size = 2
         cycle = 4
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.addr = self.mem.cpu_mem[self.program_counter] + self.y_reg
+        self.mem.write(self.addr, self.x_reg)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
@@ -2730,14 +2740,17 @@ class CPU():
 
 # TSX  -  Transfer Stack to X
     def transfer_stack_from(self, pc, cycle_count): # 0xBA
-        print(" ### OPCODE: 0x%x @ 0x%04x has not implemented yet!"%(self.mem.cpu_mem[self.program_counter - 1], self.program_counter - 1))
-        exit()
-        name = ''
-        ext = ''
+        name = 'TSX'
+        ext = 'NODATA'
         size = 1
         cycle = 2
         if bool(self.debug & self.DBG_OPCODE):
             self.opcode_dbg_prt(size, cycle, name, ext)
+
+        self.x_reg = self.stack_pointer
+        self.sign_flag = bool(self.x_reg & 0x80)
+        self.zero_flag = not bool(self.x_reg)
+
         pc += size - 1
         cycle_count -= cycle
         return pc, cycle_count
