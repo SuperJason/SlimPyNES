@@ -25,17 +25,24 @@ class INPUT():
         self.pad1_SELECT = 0x40
         self.pad1_A = 0x40
         self.pad1_B = 0x40
-        self.pads = {
-            0: self.pad1_DOWN,
-            1: self.pad1_UP,
-            2: self.pad1_LEFT,
-            3: self.pad1_RIGHT,
-            4: self.pad1_START,
-            5: self.pad1_SELECT,
-            6: self.pad1_A,
-            7: self.pad1_B,
-            }
+        self.pads = np.ones(8, dtype=np.uint8) * 0x40
+        self.PADS = {
+                0: "pad1_A",
+                1: "pad1_B",
+                2: "pad1_SELECT",
+                3: "pad1_START",
+                4: "pad1_UP",
+                5: "pad1_DOWN",
+                6: "pad1_RIGHT",
+                7: "pad1_LEFT",
+                }
         self.readcnt = 0
+
+    def bottons(self):
+        self.nes.disp.getevent()
+        for i in range(8):
+            if self.pads[i] == 0x01:
+                print(' -- ' + self.PADS[i] + ' pressed')
 
     def reset(self):
         for i in range(8):
@@ -91,6 +98,62 @@ class DISPLAY():
         surfarray.blit_array(self.screen, self.surf)
         pygame.display.flip()
 
+    def getevent(self):
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                #print(' -----  DOWN event.key' + str(event.key))
+                if event.key == pygame.K_ESCAPE:
+                    print(' ### K_ESCAPE is pressed, so exit! ###')
+                    exit()
+                if event.key == pygame.K_j:
+                    self.nes.in_put.pad1_A = 0x01
+                    self.nes.in_put.pads[0]= 0x01
+                if event.key == pygame.K_k:
+                    self.nes.in_put.pad1_B = 0x01
+                    self.nes.in_put.pads[1]= 0x01
+                if event.key == pygame.K_z:
+                    self.nes.in_put.pad1_SELECT = 0x01
+                    self.nes.in_put.pads[2]= 0x01
+                if event.key == pygame.K_x:
+                    self.nes.in_put.pad1_START = 0x01
+                    self.nes.in_put.pads[3]= 0x01
+                if event.key == pygame.K_w:
+                    self.nes.in_put.pad1_UP = 0x01
+                    self.nes.in_put.pads[4]= 0x01
+                if event.key == pygame.K_s:
+                    self.nes.in_put.pad1_DOWN = 0x01
+                    self.nes.in_put.pads[5]= 0x01
+                if event.key == pygame.K_a:
+                    self.nes.in_put.pad1_LEFT = 0x01
+                    self.nes.in_put.pads[6]= 0x01
+                if event.key == pygame.K_d:
+                    self.nes.in_put.pad1_RIGHT = 0x01
+                    self.nes.in_put.pads[7]= 0x01
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_j:
+                    self.nes.in_put.pad1_A = 0x40
+                    self.nes.in_put.pads[0]= 0x40
+                if event.key == pygame.K_k:
+                    self.nes.in_put.pad1_B = 0x40
+                    self.nes.in_put.pads[1]= 0x40
+                if event.key == pygame.K_z:
+                    self.nes.in_put.pad1_SELECT = 0x40
+                    self.nes.in_put.pads[2]= 0x40
+                if event.key == pygame.K_x:
+                    self.nes.in_put.pad1_START = 0x40
+                    self.nes.in_put.pads[3]= 0x40
+                if event.key == pygame.K_w:
+                    self.nes.in_put.pad1_UP = 0x40
+                    self.nes.in_put.pads[4]= 0x40
+                if event.key == pygame.K_s:
+                    self.nes.in_put.pad1_DOWN = 0x40
+                    self.nes.in_put.pads[5]= 0x40
+                if event.key == pygame.K_a:
+                    self.nes.in_put.pad1_LEFT = 0x40
+                    self.nes.in_put.pads[6]= 0x40
+                if event.key == pygame.K_d:
+                    self.nes.in_put.pad1_RIGHT = 0x40
+                    self.nes.in_put.pads[7]= 0x40
 
 class NES():
     # cpu speed
@@ -192,6 +255,8 @@ class NES():
                 self.disp.update()
 
             self.skipframe += 1
+
+            self.in_put.bottons()
 
             #time.sleep(self.delay)
             if self.debug & self.NES_TIME_DBG:
