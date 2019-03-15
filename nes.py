@@ -80,20 +80,6 @@ class DISPLAY():
         self.screen.fill([0x33,0x66,0x44])
         pygame.display.update()
 
-    def set_pixel(self, x, y, nes_color):
-        if x >= self.nes.width:
-            return
-        if y >= self.nes.hight:
-            return
-        self.surf[x][y][0] = self.palette[nes_color][0]
-        self.surf[x][y][1] = self.palette[nes_color][1]
-        self.surf[x][y][2] = self.palette[nes_color][2]
-#        r = self.palette[nes_color].r
-#        g = self.palette[nes_color].g
-#        b = self.palette[nes_color].b
-#        if self.nes.debug & self.nes.DISP_DBG:
-#            print('[%d] --- x: %d, y: %d, nes_color: %d --- r: %x, g: %x, b: %x ---'%(self.nes.cpu.dbg_cnt, x, y, nes_color, r, g, b))
-
     def update(self):
         surfarray.blit_array(self.screen, self.surf)
         pygame.display.flip()

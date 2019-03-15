@@ -288,33 +288,45 @@ class PPU():
 #                    for j in range(8):
 #                        bit1[7 - i][j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
 #                        bit2[7 - i][j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
-                for j in range(8):
-                    np.transpose(bit1)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)[::-1]
-                    np.transpose(bit2)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)[::-1]
+ #               for j in range(8):
+ #                   np.transpose(bit1)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)[::-1]
+ #                   np.transpose(bit2)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)[::-1]
+                t = ((1 << np.arange(8)) * np.ones(64, dtype=np.uint8).reshape(8, 8)).T
+                bit1[::-1, 0:8] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
+                bit2[::-1, 0:8] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 1
             elif bool(flip_spr_hor) and not bool(flip_spr_ver):
 #                for i in range(8):
 #                    for j in range(8):
 #                        bit1[i][j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
 #                        bit2[i][j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
-                for j in range(8):
-                    np.transpose(bit1)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)
-                    np.transpose(bit2)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)
+ #               for j in range(8):
+ #                   np.transpose(bit1)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)
+ #                   np.transpose(bit2)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)
+                t = ((1 << np.arange(8)) * np.ones(64, dtype=np.uint8).reshape(8, 8)).T
+                bit1[:, 0:8] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
+                bit2[:, 0:8] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 1
             elif not bool(flip_spr_hor) and bool(flip_spr_ver):
 #                for i in range(8)[::-1]:
 #                    for j in range(8)[::-1]:
 #                        bit1[7 - i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
 #                        bit2[7 - i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
-                for j in range(8)[::-1]:
-                    np.transpose(bit1)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)[::-1]
-                    np.transpose(bit2)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)[::-1]
+ #               for j in range(8)[::-1]:
+ #                   np.transpose(bit1)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)[::-1]
+ #                   np.transpose(bit2)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)[::-1]
+                t = ((1 << np.arange(8)) * np.ones(64, dtype=np.uint8).reshape(8, 8)).T
+                bit1[::-1, 7::-1] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
+                bit2[::-1, 7::-1] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 1
             elif bool(flip_spr_hor) and bool(flip_spr_ver):
 #                for i in range(8):
 #                    for j in range(8)[::-1]:
 #                        bit1[i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
 #                        bit2[i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
-                for j in range(8)[::-1]:
-                    np.transpose(bit1)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)
-                    np.transpose(bit2)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)
+ #               for j in range(8)[::-1]:
+ #                   np.transpose(bit1)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)
+ #                   np.transpose(bit2)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)
+                t = ((1 << np.arange(8)) * np.ones(64, dtype=np.uint8).reshape(8, 8)).T
+                bit1[::-1, 7::-1] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
+                bit2[::-1, 7::-1] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 1
 
             # merge bits
 #            for i in range(8):
