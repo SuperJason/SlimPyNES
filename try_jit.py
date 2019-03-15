@@ -3,6 +3,7 @@
 
 import numba as nb
 import numpy as np
+import time
 
 node_type = nb.deferred_type()
 spec = [
@@ -60,6 +61,27 @@ class JIT_PPU():
     def render_bg(self):
         self.looyV += 1
 
+@nb.njit
+def set_status(ppu):
+    #print('--set_status--')
+    ppu.looyX = 2
+
+@nb.njit
+def get_status(ppu):
+    #print('--get_status--')
+    return ppu.looyX
+
+opcode = [ set_status, get_status ]
+
+@nb.njit
+def nes_start(ppu, p):
+    print('--nes_start--')
+    cnt = 100000
+    ppu.looyV = 2
+    while(cnt):
+        set_status(ppu)
+        cnt -= 1
+        p[1](ppu)
 
 if __name__ == '__main__':
     mem = JIT_MEM()
@@ -69,3 +91,7 @@ if __name__ == '__main__':
     cpu.excute()
     ppu.render_bg()
     mem.write(1, 1)
+    start_time = time.time()
+    nes_start(ppu, opcode)
+    now_time = time.time()
+    print('Escaped time: %f'%(now_time - start_time))
