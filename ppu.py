@@ -275,7 +275,7 @@ class PPU():
         else:
             sprite_pattern_table = 0x1000
 
-	    # pattern_number * 16
+	# pattern_number * 16
         spr_start = sprite_pattern_table + ((pattern_num << 3) << 1)
         if self.nes.debug & self.nes.PPU_SPR_DBG:
             print('[%d] (spritedebug [%d]): pattern_number = %d [hex %x], sprite_patterntable start addr = %x, ppu mem value = %x'%(self.nes.cpu.dbg_cnt, spr_nr, pattern_num, pattern_num, sprite_pattern_table + (pattern_num * 16), self.nes.mem.ppu_mem[sprite_pattern_table + (pattern_num * 16)]))
@@ -339,8 +339,9 @@ class PPU():
 #                        sprite[i][j] = 2
 #                    elif (bit1[i][j] == 1) and (bit2[i][j] == 1):
 #                        sprite[i][j] = 3
-            for j in range(8):
-                np.transpose(sprite)[j] = np.transpose(bit1)[j] + np.transpose(bit2)[j]
+ #           for j in range(8):
+ #               np.transpose(sprite)[j] = np.transpose(bit1)[j] + np.transpose(bit2)[j]
+            sprite = bit1 + bit2
 
             # add sprite attribute colors
             if not bool(flip_spr_hor) and not bool(flip_spr_ver):
@@ -348,33 +349,45 @@ class PPU():
 #                    for j in range(8):
 #                        if sprite[7 - i][j] != 0:
 #                            sprite[7 - i][j] += ((attribs & 0x03) << 2)
-                for j in range(8):
-                    tmp_sprite = ((np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2))[::-1]
-                    np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
+ #               for j in range(8):
+ #                   tmp_sprite = ((np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2))[::-1]
+ #                   np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
+                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
+                tmp_sprite.dtype = 'uint8'
+                sprite[::-1, 0:8] += tmp_sprite[0:8, 0:8]
             elif bool(flip_spr_hor) and not bool(flip_spr_ver):
 #                for i in range(8):
 #                    for j in range(8):
 #                        if sprite[i][j] != 0:
 #                            sprite[i][j] += ((attribs & 0x03) << 2)
-                for j in range(8):
-                    tmp_sprite = (np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2)
-                    np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
+ #               for j in range(8):
+ #                   tmp_sprite = (np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2)
+ #                   np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
+                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
+                tmp_sprite.dtype = 'uint8'
+                sprite[0:8, 0:8] += tmp_sprite[0:8, 0:8]
             elif not bool(flip_spr_hor) and bool(flip_spr_ver):
 #                for i in range(8)[::-1]:
 #                    for j in range(8)[::-1]:
 #                        if sprite[7 - i][7 - j] != 0:
 #                            sprite[7 - i][7 - j] += ((attribs & 0x03) << 2)
-                for j in range(8)[::-1]:
-                    tmp_sprite = ((np.transpose(sprite)[7 - j] > 0) * ((attribs & 0x03) << 2))[::-1]
-                    np.transpose(sprite)[7 - j] = np.transpose(sprite)[7 - j] + tmp_sprite
+ #               for j in range(8)[::-1]:
+ #                   tmp_sprite = ((np.transpose(sprite)[7 - j] > 0) * ((attribs & 0x03) << 2))[::-1]
+ #                   np.transpose(sprite)[7 - j] = np.transpose(sprite)[7 - j] + tmp_sprite
+                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
+                tmp_sprite.dtype = 'uint8'
+                sprite[::-1, 7::-1] += tmp_sprite[0:8, 0:8]
             elif bool(flip_spr_hor) and bool(flip_spr_ver):
 #                for i in range(8):
 #                    for j in range(8)[::-1]:
 #                        if sprite[i][7 - j] != 0:
 #                            sprite[i][7 - j] += ((attribs & 0x03) << 2)
-                for j in range(8)[::-1]:
-                    tmp_sprite = (np.transpose(sprite)[7 - j] > 0) * ((attribs & 0x03) << 2)
-                    np.transpose(sprite)[7 - j] = np.transpose(sprite)[7 - j] + tmp_sprite
+ #               for j in range(8)[::-1]:
+ #                   tmp_sprite = (np.transpose(sprite)[7 - j] > 0) * ((attribs & 0x03) << 2)
+ #                   np.transpose(sprite)[7 - j] = np.transpose(sprite)[7 - j] + tmp_sprite
+                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
+                tmp_sprite.dtype = 'uint8'
+                sprite[0:8, 7::-1] += tmp_sprite[0:8, 0:8]
 
 #            for i in range(8):
 #                for j in range(8):
@@ -409,9 +422,10 @@ class PPU():
                     disp_color_spr = self.nes.mem.ppu_mem[0x3f10 + sprite[0:8, 0:8]]
                     sprite_masked_color_base = np.ones((8, 8), np.uint8) * self.nes.mem.ppu_mem[0x3f10] * sprite_mask
                     disp_color = disp_color_bg * sprite_mask + disp_color_spr - sprite_masked_color_base
-                    np.transpose(self.nes.disp.surf)[0][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
-                    np.transpose(self.nes.disp.surf)[1][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
-                    np.transpose(self.nes.disp.surf)[2][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
+                    #np.transpose(self.nes.disp.surf)[0][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
+                    #np.transpose(self.nes.disp.surf)[1][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
+                    #np.transpose(self.nes.disp.surf)[2][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
+                    self.nes.disp.surf[x:x+8, y:y+8, :] = self.nes.disp.palette[disp_color, :]
             else:
                 if (x + 8 < 256) and (y + 8 < 240) and (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                     bg_mask = np.ones((8, 8), np.uint8) - (self.bgcache[x:x+8, y:y+8] > 0) * 1
@@ -419,9 +433,10 @@ class PPU():
                     disp_color_spr = self.nes.mem.ppu_mem[0x3f10 + sprite[0:8, 0:8]]
                     sprite_masked_color_base = np.ones((8, 8), np.uint8) * self.nes.mem.ppu_mem[0x3f00] * bg_mask
                     disp_color = disp_color_spr * bg_mask + disp_color_bg - sprite_masked_color_base
-                    np.transpose(self.nes.disp.surf)[0][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
-                    np.transpose(self.nes.disp.surf)[1][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
-                    np.transpose(self.nes.disp.surf)[2][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
+                    #np.transpose(self.nes.disp.surf)[0][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
+                    #np.transpose(self.nes.disp.surf)[1][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
+                    #np.transpose(self.nes.disp.surf)[2][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
+                    self.nes.disp.surf[x:x+8, y:y+8, :] = self.nes.disp.palette[disp_color, :]
         else:
             # 8 x 16 sprites
             # fetch bits
@@ -430,35 +445,47 @@ class PPU():
 #                    for j in range(16):
 #                        bit1[7 - i][j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
 #                        bit2[7 - i][j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
-                for j in range(16):
-                    np.transpose(bit1)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)[::-1]
-                    np.transpose(bit2)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)[::-1]
+ #               for j in range(16):
+ #                   np.transpose(bit1)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)[::-1]
+ #                   np.transpose(bit2)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)[::-1]
+                t = ((1 << np.arange(8)) * np.ones(8*16, dtype=np.uint8).reshape(8, 16)).T
+                bit1[::-1, :] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
+                bit2[::-1, :] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 2
             elif bool(flip_spr_hor) and not bool(flip_spr_ver):
 #                for i in range(8):
 #                    for j in range(16):
 #                        bit1[i][j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
 #                        bit2[i][j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
-                for j in range(16):
-                    np.transpose(bit1)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)
-                    np.transpose(bit2)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)
+ #               for j in range(16):
+ #                   np.transpose(bit1)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)
+ #                   np.transpose(bit2)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)
+                t = ((1 << np.arange(8)) * np.ones(8*16, dtype=np.uint8).reshape(8, 16)).T
+                bit1[:, :] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
+                bit2[:, :] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 2
             elif not bool(flip_spr_hor) and bool(flip_spr_ver):
 #                for i in range(8)[::-1]:
 #                    for j in range(16)[::-1]:
 #                        bit1[7 - i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
 #                        bit2[7 - i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
 # TODO [15 - j]?, run here when sprite invert to headstand
-                for j in range(16)[::-1]:
-                    np.transpose(bit1)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)[::-1]
-                    np.transpose(bit2)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)[::-1]
+ #               for j in range(16)[::-1]:
+ #                   np.transpose(bit1)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)[::-1]
+ #                   np.transpose(bit2)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)[::-1]
+                t = ((1 << np.arange(8)) * np.ones(8*16, dtype=np.uint8).reshape(8, 16)).T
+                bit1[::-1, ::-1] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
+                bit2[::-1, ::-1] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 2
             elif bool(flip_spr_hor) and bool(flip_spr_ver):
 #                for i in range(8):
 #                    for j in range(16)[::-1]:
 #                        bit1[i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
 #                        bit2[i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
 # TODO [15 - j]?, run here when sprite invert to headstand
-                for j in range(8)[::-1]:
-                    np.transpose(bit1)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)
-                    np.transpose(bit2)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)
+ #               for j in range(8)[::-1]:
+ #                   np.transpose(bit1)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)
+ #                   np.transpose(bit2)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)
+                t = ((1 << np.arange(8)) * np.ones(8*16, dtype=np.uint8).reshape(8, 16)).T
+                bit1[:, ::-1] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
+                bit2[:, ::-1] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 2
 
             # merge bits
 #            for i in range(8):
@@ -471,8 +498,9 @@ class PPU():
 #                        sprite[i][j] = 2
 #                    elif (bit1[i][j] == 1) and (bit2[i][j] == 1):
 #                        sprite[i][j] = 3
-            for j in range(16):
-                np.transpose(sprite)[j] = np.transpose(bit1)[j] + np.transpose(bit2)[j]
+ #           for j in range(16):
+ #               np.transpose(sprite)[j] = np.transpose(bit1)[j] + np.transpose(bit2)[j]
+            sprite = bit1 + bit2
 
             # add sprite attribute colors
             if not bool(flip_spr_hor) and not bool(flip_spr_ver):
@@ -480,33 +508,45 @@ class PPU():
 #                    for j in range(16):
 #                        if sprite[7 - i][j] != 0:
 #                            sprite[7 - i][j] += ((attribs & 0x03) << 2)
-                for j in range(16):
-                    tmp_sprite = ((np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2))[::-1]
-                    np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
+ #               for j in range(16):
+ #                   tmp_sprite = ((np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2))[::-1]
+ #                   np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
+                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
+                tmp_sprite.dtype = 'uint8'
+                sprite[::-1, :] += tmp_sprite[:, :]
             elif bool(flip_spr_hor) and not bool(flip_spr_ver):
 #                for i in range(8):
 #                    for j in range(16):
 #                        if sprite[i][j] != 0:
 #                            sprite[i][j] += ((attribs & 0x03) << 2)
-                for j in range(16):
-                    tmp_sprite = (np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2)
-                    np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
+ #               for j in range(16):
+ #                   tmp_sprite = (np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2)
+ #                   np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
+                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
+                tmp_sprite.dtype = 'uint8'
+                sprite[:, :] += tmp_sprite[:, :]
             elif not bool(flip_spr_hor) and bool(flip_spr_ver):
 #                for i in range(8)[::-1]:
 #                    for j in range(16)[::-1]:
 #                        if sprite[7 - i][15 - j] != 0:
 #                            sprite[7 - i][15 - j] += ((attribs & 0x03) << 2)
-                for j in range(16)[::-1]:
-                    tmp_sprite = ((np.transpose(sprite)[15 - j] > 0) * ((attribs & 0x03) << 2))[::-1]
-                    np.transpose(sprite)[7 - j] = np.transpose(sprite)[15 - j] + tmp_sprite
+ #               for j in range(16)[::-1]:
+ #                   tmp_sprite = ((np.transpose(sprite)[15 - j] > 0) * ((attribs & 0x03) << 2))[::-1]
+ #                   np.transpose(sprite)[7 - j] = np.transpose(sprite)[15 - j] + tmp_sprite
+                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
+                tmp_sprite.dtype = 'uint8'
+                sprite[::-1, ::-1] += tmp_sprite[:, :]
             elif bool(flip_spr_hor) and bool(flip_spr_ver):
 #                for i in range(8):
 #                    for j in range(16)[::-1]:
 #                        if sprite[i][15 - j] != 0:
 #                            sprite[i][15 - j] += ((attribs & 0x03) << 2)
-                for j in range(16)[::-1]:
-                    tmp_sprite = (np.transpose(sprite)[15 - j] > 0) * ((attribs & 0x03) << 2)
-                    np.transpose(sprite)[7 - j] = np.transpose(sprite)[15 - j] + tmp_sprite
+ #               for j in range(16)[::-1]:
+ #                   tmp_sprite = (np.transpose(sprite)[15 - j] > 0) * ((attribs & 0x03) << 2)
+ #                   np.transpose(sprite)[7 - j] = np.transpose(sprite)[15 - j] + tmp_sprite
+                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
+                tmp_sprite.dtype = 'uint8'
+                sprite[:, ::-1] += tmp_sprite[:, :]
 
 #            for i in range(8):
 #                for j in range(16):
@@ -541,9 +581,10 @@ class PPU():
                     disp_color_spr = self.nes.mem.ppu_mem[0x3f10 + sprite[0:8, 0:16]]
                     sprite_masked_color_base = np.ones((8, 16), np.uint8) * self.nes.mem.ppu_mem[0x3f10] * sprite_mask
                     disp_color = disp_color_bg * sprite_mask + disp_color_spr - sprite_masked_color_base
-                    np.transpose(self.nes.disp.surf)[0][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
-                    np.transpose(self.nes.disp.surf)[1][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
-                    np.transpose(self.nes.disp.surf)[2][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
+                    #np.transpose(self.nes.disp.surf)[0][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
+                    #np.transpose(self.nes.disp.surf)[1][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
+                    #np.transpose(self.nes.disp.surf)[2][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
+                    self.nes.disp.surf[x:x+8, y:y+16, :] = self.nes.disp.palette[disp_color, :]
             else:
                 if (x + 8 < 256) and (y + 16 < 240) and (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                     bg_mask = np.ones((8, 16), np.uint8) - (self.bgcache[x:x+8, y:y+16] > 0) * 1
@@ -554,6 +595,7 @@ class PPU():
                     np.transpose(self.nes.disp.surf)[0][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
                     np.transpose(self.nes.disp.surf)[1][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
                     np.transpose(self.nes.disp.surf)[2][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
+                    self.nes.disp.surf[x:x+8, y:y+16, :] = self.nes.disp.palette[disp_color, :]
 
 
     def render_sprites(self):
