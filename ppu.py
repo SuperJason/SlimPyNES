@@ -431,7 +431,7 @@ class PPU():
                     bg_mask = np.ones((8, 8), np.uint8) - (self.bgcache[x:x+8, y:y+8] > 0) * 1
                     disp_color_bg = self.nes.mem.ppu_mem[0x3f00 + self.bgcache[x:x+8, y:y+8]]
                     disp_color_spr = self.nes.mem.ppu_mem[0x3f10 + sprite[0:8, 0:8]]
-                    sprite_masked_color_base = np.ones((8, 8), np.uint8) * self.nes.mem.ppu_mem[0x3f00] * bg_mask
+                    sprite_masked_color_base = np.ones((8, 8), np.uint8) * self.nes.mem.ppu_mem[0x3f10] * bg_mask
                     disp_color = disp_color_spr * bg_mask + disp_color_bg - sprite_masked_color_base
                     #np.transpose(self.nes.disp.surf)[0][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
                     #np.transpose(self.nes.disp.surf)[1][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
@@ -590,11 +590,11 @@ class PPU():
                     bg_mask = np.ones((8, 16), np.uint8) - (self.bgcache[x:x+8, y:y+16] > 0) * 1
                     disp_color_bg = self.nes.mem.ppu_mem[0x3f00 + self.bgcache[x:x+8, y:y+16]]
                     disp_color_spr = self.nes.mem.ppu_mem[0x3f10 + sprite[0:8, 0:16]]
-                    sprite_masked_color_base = np.ones((8, 16), np.uint8) * self.nes.mem.ppu_mem[0x3f00] * bg_mask
+                    sprite_masked_color_base = np.ones((8, 16), np.uint8) * self.nes.mem.ppu_mem[0x3f10] * bg_mask
                     disp_color = disp_color_spr * bg_mask + disp_color_bg - sprite_masked_color_base
-                    np.transpose(self.nes.disp.surf)[0][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
-                    np.transpose(self.nes.disp.surf)[1][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
-                    np.transpose(self.nes.disp.surf)[2][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
+                    #np.transpose(self.nes.disp.surf)[0][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
+                    #np.transpose(self.nes.disp.surf)[1][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
+                    #np.transpose(self.nes.disp.surf)[2][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
                     self.nes.disp.surf[x:x+8, y:y+16, :] = self.nes.disp.palette[disp_color, :]
 
 
