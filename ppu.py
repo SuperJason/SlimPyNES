@@ -603,6 +603,13 @@ class PPU():
         self.sprcache[:][:] = 0
         # fetch all 64 sprites out of the sprite memory 4 bytes at a time and render the sprite
         # sprites are drawn in priority from sprite 64 to 0
+        #for i in range(16):
+        #    print('[%x, %x, %x, %x], [%x, %x, %x, %x], [%x, %x, %x, %x], [%x, %x, %x, %x]'%(
+        #      self.nes.mem.sprite_mem[i + 0], self.nes.mem.sprite_mem[i + 1], self.nes.mem.sprite_mem[i + 2], self.nes.mem.sprite_mem[i + 3],
+        #      self.nes.mem.sprite_mem[i + 4], self.nes.mem.sprite_mem[i + 5], self.nes.mem.sprite_mem[i + 6], self.nes.mem.sprite_mem[i + 7],
+        #      self.nes.mem.sprite_mem[i + 8], self.nes.mem.sprite_mem[i + 9], self.nes.mem.sprite_mem[i + 10], self.nes.mem.sprite_mem[i + 11],
+        #      self.nes.mem.sprite_mem[i + 12], self.nes.mem.sprite_mem[i + 13], self.nes.mem.sprite_mem[i + 14], self.nes.mem.sprite_mem[i + 11],
+        #      ))
         for i in range(64)[::-1]:
             y = self.nes.mem.sprite_mem[i * 4]
             x = self.nes.mem.sprite_mem[i * 4 + 3]

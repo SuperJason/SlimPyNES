@@ -40,6 +40,7 @@ class MEMORY():
 
         # sprite_memory i/o register
         if addr == 0x2004:
+            print('###DBG### ppu_write() 0x2004, sprite_address: %x, data: %x'%(self.nes.ppu.sprite_address, value))
             self.nes.ppu.addr_tmp = value
             self.sprite_mem[self.nes.ppu.sprite_address] = value
             self.nes.ppu.sprite_address += 1
@@ -145,6 +146,13 @@ class MEMORY():
         if addr == 0x4014:
             for i in range(256):
                 self.sprite_mem[i] = self.cpu_mem[0x100 * value + i]
+            for i in range(16):
+                print('###DBG### ppu_write() 0x4014, value: %x, [%x, %x, %x, %x], [%x, %x, %x, %x], [%x, %x, %x, %x], [%x, %x, %x, %x]'%(value,
+                  self.sprite_mem[i + 0], self.sprite_mem[i + 1], self.sprite_mem[i + 2], self.sprite_mem[i + 3],
+                  self.sprite_mem[i + 4], self.sprite_mem[i + 5], self.sprite_mem[i + 6], self.sprite_mem[i + 7],
+                  self.sprite_mem[i + 8], self.sprite_mem[i + 9], self.sprite_mem[i + 10], self.sprite_mem[i + 11],
+                  self.sprite_mem[i + 12], self.sprite_mem[i + 13], self.sprite_mem[i + 14], self.sprite_mem[i + 11],
+                  ))
             return
 
     def write(self, addr, value):
