@@ -40,7 +40,7 @@ class MEMORY():
 
         # sprite_memory i/o register
         if addr == 0x2004:
-            print('###DBG### ppu_write() 0x2004, sprite_address: %x, data: %x'%(self.nes.ppu.sprite_address, value))
+            #print('###DBG### ppu_write() 0x2004, sprite_address: %x, data: %x'%(self.nes.ppu.sprite_address, value))
             self.nes.ppu.addr_tmp = value
             self.sprite_mem[self.nes.ppu.sprite_address] = value
             self.nes.ppu.sprite_address += 1
@@ -146,13 +146,13 @@ class MEMORY():
         if addr == 0x4014:
             for i in range(256):
                 self.sprite_mem[i] = self.cpu_mem[0x100 * value + i]
-            for i in range(16):
-                print('###DBG### ppu_write() 0x4014, value: %x, [%x, %x, %x, %x], [%x, %x, %x, %x], [%x, %x, %x, %x], [%x, %x, %x, %x]'%(value,
-                  self.sprite_mem[i*16+0], self.sprite_mem[i*16+1], self.sprite_mem[i*16+2], self.sprite_mem[i*16+3],
-                  self.sprite_mem[i*16+4], self.sprite_mem[i*16+5], self.sprite_mem[i*16+6], self.sprite_mem[i*16+7],
-                  self.sprite_mem[i*16+8], self.sprite_mem[i*16+9], self.sprite_mem[i*16+10], self.sprite_mem[i*16+11],
-                  self.sprite_mem[i*16+12], self.sprite_mem[i*16+13], self.sprite_mem[i*16+14], self.sprite_mem[i*16+15],
-                  ))
+            #for i in range(16):
+            #    print('###DBG### ppu_write() 0x4014, value: %x, [%x, %x, %x, %x], [%x, %x, %x, %x], [%x, %x, %x, %x], [%x, %x, %x, %x]'%(value,
+            #      self.sprite_mem[i*16+0], self.sprite_mem[i*16+1], self.sprite_mem[i*16+2], self.sprite_mem[i*16+3],
+            #      self.sprite_mem[i*16+4], self.sprite_mem[i*16+5], self.sprite_mem[i*16+6], self.sprite_mem[i*16+7],
+            #      self.sprite_mem[i*16+8], self.sprite_mem[i*16+9], self.sprite_mem[i*16+10], self.sprite_mem[i*16+11],
+            #      self.sprite_mem[i*16+12], self.sprite_mem[i*16+13], self.sprite_mem[i*16+14], self.sprite_mem[i*16+15],
+            #      ))
             return
 
     def write(self, addr, value):

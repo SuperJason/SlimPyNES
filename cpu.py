@@ -12,7 +12,7 @@ class CPU():
         self.nes = nes
         self.mem = nes.mem
         #self.debug = self.DBG_OPCODE | self.DBG_NMI
-        self.debug = 0
+        self.debug = self.DBG_OPCODE
         self.dbg_cnt = 0
         self.addr = 0
 
@@ -152,9 +152,10 @@ class CPU():
         regs_str = '[%d] %s'%(self.dbg_cnt - 1, reg_str)
         flags_str = '[%d] %s'%(self.dbg_cnt - 1, flag_str)
         ops_str = '[%d] executing instruction at offset 0x%x: [0x%x - %s]'%(self.dbg_cnt - 1, self.program_counter - 1, op, name) + ass_str
-        print(regs_str)
-        print(flags_str)
-        print(ops_str)
+        #print(regs_str)
+        #print(flags_str)
+        #print(ops_str)
+        self.nes.log_cmp_debug(regs_str, flags_str, ops_str)
 
 
 # ----- OpCode Functions -----
