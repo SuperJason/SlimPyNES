@@ -191,40 +191,6 @@ class NES():
 
         self.debug = self.NES_TIME_DBG
 
-        self.lamenes_logs_fp = open(r'./logs', 'r')
-        self.lamenes_logs_regs = self.lamenes_logs_fp.readline()[0:-1]
-        self.lamenes_logs_flags = self.lamenes_logs_fp.readline()[0:-1]
-        self.lamenes_logs_ops = self.lamenes_logs_fp.readline()[0:-1]
-        self.lamenes_logs_last_regs = self.lamenes_logs_regs
-        self.lamenes_logs_last_flags = self.lamenes_logs_flags
-        self.lamenes_logs_last_ops = self.lamenes_logs_ops
-
-    def log_cmp_debug(self, regs, flags, ops):
-        if self.lamenes_logs_regs != regs or self.lamenes_logs_flags != flags or self.lamenes_logs_ops != ops: 
-            print('---- logs is different ---------------')
-            print(self.lamenes_logs_last_regs)
-            print(self.lamenes_logs_last_flags)
-            print(self.lamenes_logs_last_ops)
-            print(self.lamenes_logs_regs)
-            print(self.lamenes_logs_flags)
-            print(self.lamenes_logs_ops)
-            print('-------------------')
-            print(regs)
-            print(flags)
-            print(ops)
-            print('-------------------')
-            print(self.in_put.readcnt)
-            print(self.in_put.pads[7])
-            print('-------------------')
-            exit()
-        else:
-            self.lamenes_logs_last_regs = self.lamenes_logs_regs
-            self.lamenes_logs_last_flags = self.lamenes_logs_flags
-            self.lamenes_logs_last_ops = self.lamenes_logs_ops
-            self.lamenes_logs_regs = self.lamenes_logs_fp.readline()[0:-1]
-            self.lamenes_logs_flags = self.lamenes_logs_fp.readline()[0:-1]
-            self.lamenes_logs_ops = self.lamenes_logs_fp.readline()[0:-1]
-
     def start(self):
         counter = 0
         print(' -- NES Emulator Stating... --')
@@ -275,18 +241,6 @@ class NES():
                 self.disp.update()
 
             self.skipframe += 1
-
-            if self.cpu.dbg_cnt > 450000 and self.cpu.dbg_cnt < 550000:
-                self.in_put.pad1_START = 0x01
-                self.in_put.pads[3]= 0x01
-
-            if self.cpu.dbg_cnt > 550000:
-                self.in_put.pad1_START = 0x40
-                self.in_put.pads[3]= 0x40
-
-            if self.cpu.dbg_cnt > 2900000:
-                self.in_put.pad1_RIGHT = 0x01
-                self.in_put.pads[7]= 0x01
 
             self.in_put.bottons()
 

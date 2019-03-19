@@ -12,7 +12,7 @@ class CPU():
         self.nes = nes
         self.mem = nes.mem
         #self.debug = self.DBG_OPCODE | self.DBG_NMI
-        self.debug = self.DBG_OPCODE
+        self.debug = 0
         self.dbg_cnt = 0
         self.addr = 0
 
@@ -98,7 +98,7 @@ class CPU():
     def opcode_dbg_prt(self, size, cycle, name, ext):
         op = self.mem.cpu_mem[self.program_counter - 1]
         flag_str = 'Z:%d, N:%d, O:%d, B:%d, D:%d, I:%d, C:%d'%(self.zero_flag, self.sign_flag, self.overflow_flag, self.break_flag, self.decimal_flag, self.interrupt_flag, self.carry_flag)
-        reg_str = 'A:%x, P:%x, X:%x, Y:%x, S:0x%04x, addr:%x, ps: %x'%(self.accumulator, self.status_reg, self.x_reg, self.y_reg, self.stack_pointer + 0x100, self.addr, self.nes.ppu.status)
+        reg_str = 'A:%x, P:%x, X:%x, Y:%x, S:0x%04x, addr:%x'%(self.accumulator, self.status_reg, self.x_reg, self.y_reg, self.stack_pointer + 0x100, self.addr)
         if ext == 'NODATA':
             ass_str = ''
         elif ext == 'ACC':
@@ -152,10 +152,9 @@ class CPU():
         regs_str = '[%d] %s'%(self.dbg_cnt - 1, reg_str)
         flags_str = '[%d] %s'%(self.dbg_cnt - 1, flag_str)
         ops_str = '[%d] executing instruction at offset 0x%x: [0x%x - %s]'%(self.dbg_cnt - 1, self.program_counter - 1, op, name) + ass_str
-        #print(regs_str)
-        #print(flags_str)
-        #print(ops_str)
-        self.nes.log_cmp_debug(regs_str, flags_str, ops_str)
+        print(regs_str)
+        print(flags_str)
+        print(ops_str)
 
 
 # ----- OpCode Functions -----
