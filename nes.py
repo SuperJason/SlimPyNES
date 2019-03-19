@@ -33,8 +33,8 @@ class INPUT():
                 3: "pad1_START",
                 4: "pad1_UP",
                 5: "pad1_DOWN",
-                6: "pad1_RIGHT",
-                7: "pad1_LEFT",
+                6: "pad1_LEFT",
+                7: "pad1_RIGHT",
                 }
         self.readcnt = 0
 
@@ -237,7 +237,7 @@ class NES():
             self.cpu.execute(self.start_init)
 
             # Set ppu status bit7 to 1 and enter vblank
-            self.ppu.status = 0x80
+            self.ppu.status |= 0x80
             self.mem.cpu_mem[0x2002] = self.ppu.status
             counter += self.cpu.execute(12)
 
@@ -277,16 +277,16 @@ class NES():
             self.skipframe += 1
 
             if self.cpu.dbg_cnt > 450000 and self.cpu.dbg_cnt < 550000:
-                self.in_put.pad1_RIGHT = 0x01
-                self.in_put.pads[7]= 0x01
-
-            if self.cpu.dbg_cnt > 550000:
-                self.in_put.pad1_RIGHT = 0x40
-                self.in_put.pads[7]= 0x40
-
-            if self.cpu.dbg_cnt > 2900000:
                 self.in_put.pad1_START = 0x01
                 self.in_put.pads[3]= 0x01
+
+            if self.cpu.dbg_cnt > 550000:
+                self.in_put.pad1_START = 0x40
+                self.in_put.pads[3]= 0x40
+
+            if self.cpu.dbg_cnt > 2900000:
+                self.in_put.pad1_RIGHT = 0x01
+                self.in_put.pads[7]= 0x01
 
             self.in_put.bottons()
 

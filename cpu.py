@@ -98,7 +98,7 @@ class CPU():
     def opcode_dbg_prt(self, size, cycle, name, ext):
         op = self.mem.cpu_mem[self.program_counter - 1]
         flag_str = 'Z:%d, N:%d, O:%d, B:%d, D:%d, I:%d, C:%d'%(self.zero_flag, self.sign_flag, self.overflow_flag, self.break_flag, self.decimal_flag, self.interrupt_flag, self.carry_flag)
-        reg_str = 'A:%x, P:%x, X:%x, Y:%x, S:0x%04x, addr:%x'%(self.accumulator, self.status_reg, self.x_reg, self.y_reg, self.stack_pointer + 0x100, self.addr)
+        reg_str = 'A:%x, P:%x, X:%x, Y:%x, S:0x%04x, addr:%x, ps: %x'%(self.accumulator, self.status_reg, self.x_reg, self.y_reg, self.stack_pointer + 0x100, self.addr, self.nes.ppu.status)
         if ext == 'NODATA':
             ass_str = ''
         elif ext == 'ACC':
@@ -204,7 +204,7 @@ class CPU():
             ext = 'ZPIX'
             self.opcode_dbg_prt(size, cycle, name, ext)
 
-        self.addr = self.mem.read(self.mem.cpu_mem[self.program_counter]) + self.x_reg
+        self.addr = self.mem.read(self.mem.cpu_mem[self.program_counter] + self.x_reg)
         tmp = self.accumulator + self.addr + int(self.carry_flag)
         self.overflow_flag = (((~(self.accumulator ^ self.addr)) & (self.accumulator ^ self.addr) & 0x80) != 0)
         self.carry_flag = tmp > 0xff
@@ -2211,7 +2211,9 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         self.addr = self.mem.read(self.mem.cpu_mem[self.program_counter])
-        tmp = self.accumulator - self.addr - int(not self.carry_flag)
+        # TODO if self.dbg_cnt > 4107136
+        #tmp = self.accumulator - self.addr - int(not self.carry_flag)
+        tmp = (self.accumulator - self.addr - int(not self.carry_flag) & 0xffffffff)
         self.overflow_flag = (((~(self.accumulator ^ self.addr)) & (self.accumulator ^ self.addr) & 0x80) != 0)
         self.carry_flag = tmp <= 0xff
         self.accumulator = tmp & 0xff
@@ -2249,7 +2251,8 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         self.addr = self.mem.read((self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter])
-        tmp = self.accumulator - self.addr - int(not self.carry_flag)
+        #tmp = self.accumulator - self.addr - int(not self.carry_flag)
+        tmp = (self.accumulator - self.addr - int(not self.carry_flag)) & 0xffffffff
         self.overflow_flag = (((~(self.accumulator ^ self.addr)) & (self.accumulator ^ self.addr) & 0x80) != 0)
         self.carry_flag = tmp <= 0xff
         self.accumulator = tmp & 0xff
@@ -2267,7 +2270,8 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         self.addr = self.mem.read(((self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter]) + self.x_reg)
-        tmp = self.accumulator - self.addr - int(not self.carry_flag)
+        #tmp = self.accumulator - self.addr - int(not self.carry_flag)
+        tmp = (self.accumulator - self.addr - int(not self.carry_flag)) & 0xffffffff
         self.overflow_flag = (((~(self.accumulator ^ self.addr)) & (self.accumulator ^ self.addr) & 0x80) != 0)
         self.carry_flag = tmp <= 0xff
         self.accumulator = tmp & 0xff
@@ -2285,7 +2289,8 @@ class CPU():
             self.opcode_dbg_prt(size, cycle, name, ext)
 
         self.addr = self.mem.read(((self.mem.cpu_mem[self.program_counter + 1] << 8) | self.mem.cpu_mem[self.program_counter]) + self.y_reg)
-        tmp = self.accumulator - self.addr - (not self.carry_flag)
+        #tmp = self.accumulator - self.addr - (not self.carry_flag)
+        tmp = (self.accumulator - self.addr - int(not self.carry_flag)) & 0xffffffff
         self.overflow_flag = (((~(self.accumulator ^ self.addr)) & (self.accumulator ^ self.addr) & 0x80) != 0)
         self.carry_flag = ((tmp <= 0xff) != 0)
         self.accumulator = tmp & 0xff
@@ -2305,7 +2310,8 @@ class CPU():
         self.addr = self.mem.cpu_mem[self.program_counter] + self.x_reg
         tmp = (self.mem.cpu_mem[self.addr + 1] << 8) | self.mem.cpu_mem[self.addr]
         tmp2 = self.mem.read(tmp)
-        tmp3 = self.accumulator - tmp2 - int(not self.carry_flag)
+        #tmp3 = self.accumulator - tmp2 - int(not self.carry_flag)
+        tmp3 = (self.accumulator - tmp2 - int(not self.carry_flag)) & 0xffffffff
         self.overflow_flag = (((~(self.accumulator ^ tmp2)) & (self.accumulator ^ tmp2) & 0x80) != 0)
         self.carry_flag = ((tmp3 <= 0xff) != 0)
         self.accumulator = tmp3 & 0xff
@@ -2325,7 +2331,8 @@ class CPU():
         self.addr = self.mem.cpu_mem[self.program_counter]
         tmp = ((self.mem.cpu_mem[self.addr + 1] << 8) | self.mem.cpu_mem[self.addr]) + self.y_reg
         tmp2 = self.mem.read(tmp)
-        tmp3 = self.accumulator - tmp2 - int(not self.carry_flag)
+        #tmp3 = self.accumulator - tmp2 - int(not self.carry_flag)
+        tmp3 = (self.accumulator - tmp2 - int(not self.carry_flag)) & 0xffffffff
         self.overflow_flag = (((~(self.accumulator ^ tmp2)) & (self.accumulator ^ tmp2) & 0x80) != 0)
         self.carry_flag = ((tmp3 <= 0xff) != 0)
         self.accumulator = tmp3 & 0xff
