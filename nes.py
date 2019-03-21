@@ -243,20 +243,6 @@ class NES():
 
             self.skipframe += 1
 
-            # This is for supermario.nes debug
-            if self.cpu.dbg_cnt > 390000 and self.cpu.dbg_cnt < 420000:
-                self.in_put.pad1_START = 0x01
-                self.in_put.pads[3]= 0x01
-            elif self.cpu.dbg_cnt > 420000:
-                self.in_put.pad1_START = 0x40
-                self.in_put.pads[3]= 0x40
-
-            if self.cpu.dbg_cnt > 2400000:
-                self.in_put.pad1_RIGHT = 0x01
-                self.in_put.pads[7]= 0x01
-                self.in_put.pad1_B = 0x01
-                self.in_put.pads[1]= 0x01
-
             self.in_put.bottons()
 
             #time.sleep(self.delay)
