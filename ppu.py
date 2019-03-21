@@ -160,7 +160,7 @@ class PPU():
                 self.bgcache[(tile_count<<3):((tile_count<<3)+8-self.loopyX), scanline] = tile[self.loopyX:8]
                 disp_color = self.nes.mem.ppu_mem[0x3f00 + tile[self.loopyX:8]]
                 if tile_count < 32 and (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
-                    self.nes.disp.surf[(tile_count<<3):((tile_count<<3)+8-self.loopyX), scanline, :] = self.nes.disp.palette[disp_color]
+                    self.nes.disp.pixels[(tile_count<<3):((tile_count<<3)+8-self.loopyX), scanline] = disp_color
             elif (tile_count == 32) and (self.loopyX != 0):
 #               for i in range(self.loopyX):
 #                   # cache pixel
@@ -175,7 +175,7 @@ class PPU():
                 self.bgcache[(tile_count<<3)-self.loopyX:(tile_count<<3), scanline] = tile[0:self.loopyX]
                 disp_color = self.nes.mem.ppu_mem[0x3f00 + tile[0:self.loopyX]]
                 if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
-                    self.nes.disp.surf[(tile_count<<3)-self.loopyX:(tile_count<<3), scanline, :] = self.nes.disp.palette[disp_color]
+                    self.nes.disp.pixels[(tile_count<<3)-self.loopyX:(tile_count<<3), scanline] = disp_color
             else:
 #               for i in range(8):
 #                   # cache pixel
@@ -190,7 +190,7 @@ class PPU():
                 self.bgcache[(tile_count<<3)-self.loopyX:((tile_count<<3)+8-self.loopyX), scanline] = tile[0:8]
                 disp_color = self.nes.mem.ppu_mem[0x3f00 + tile[0:8]]
                 if tile_count < 32 and (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
-                    self.nes.disp.surf[(tile_count<<3)-self.loopyX:((tile_count<<3)+8-self.loopyX), scanline, :] = self.nes.disp.palette[disp_color]
+                    self.nes.disp.pixels[(tile_count<<3)-self.loopyX:((tile_count<<3)+8-self.loopyX), scanline] = disp_color
 
             nt_addr += 1
             x_scroll += 1
@@ -406,27 +406,21 @@ class PPU():
             if spr_nr == 0:
                 self.sprcache[x:x+8, y:y+8] = sprite[0:8, 0:8]
             if not disp_spr_back:
-                if (x + 8 < 256) and (y + 8 < 240) and (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
+                if (x < self.nes.width) and (y < self.nes.hight) and (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                     sprite_mask = np.ones((8, 8), np.uint8) - (sprite[0:8, 0:8] > 0) * 1
-                    disp_color_bg = self.nes.mem.ppu_mem[0x3f00 + self.bgcache[x:x+8, y:y+8]]
+                    disp_color_bg = self.nes.disp.pixels[x:x+8, y:y+8]
                     disp_color_spr = self.nes.mem.ppu_mem[0x3f10 + sprite[0:8, 0:8]]
                     sprite_masked_color_base = np.ones((8, 8), np.uint8) * self.nes.mem.ppu_mem[0x3f10] * sprite_mask
                     disp_color = disp_color_bg * sprite_mask + disp_color_spr - sprite_masked_color_base
-                    #np.transpose(self.nes.disp.surf)[0][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
-                    #np.transpose(self.nes.disp.surf)[1][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
-                    #np.transpose(self.nes.disp.surf)[2][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
-                    self.nes.disp.surf[x:x+8, y:y+8, :] = self.nes.disp.palette[disp_color, :]
+                    self.nes.disp.pixels[x:x+8, y:y+8] = disp_color
             else:
-                if (x + 8 < 256) and (y + 8 < 240) and (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
+                if (x < self.nes.width) and (y < self.nes.hight) and (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                     bg_mask = np.ones((8, 8), np.uint8) - (self.bgcache[x:x+8, y:y+8] > 0) * 1
-                    disp_color_bg = self.nes.mem.ppu_mem[0x3f00 + self.bgcache[x:x+8, y:y+8]]
+                    disp_color_bg = self.nes.disp.pixels[x:x+8, y:y+8]
                     disp_color_spr = self.nes.mem.ppu_mem[0x3f10 + sprite[0:8, 0:8]]
                     sprite_masked_color_base = np.ones((8, 8), np.uint8) * self.nes.mem.ppu_mem[0x3f10] * bg_mask
                     disp_color = disp_color_spr * bg_mask + disp_color_bg - sprite_masked_color_base
-                    #np.transpose(self.nes.disp.surf)[0][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
-                    #np.transpose(self.nes.disp.surf)[1][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
-                    #np.transpose(self.nes.disp.surf)[2][y:y+8, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
-                    self.nes.disp.surf[x:x+8, y:y+8, :] = self.nes.disp.palette[disp_color, :]
+                    self.nes.disp.pixels[x:x+8, y:y+8] = disp_color
         else:
             # 8 x 16 sprites
             # fetch bits
@@ -555,27 +549,21 @@ class PPU():
             if spr_nr == 0:
                 self.sprcache[x:x+8, y:y+16] = sprite[0:8, 0:16]
             if not disp_spr_back:
-                if (x + 8 < 256) and (y + 16 < 240) and (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
+                if (x < self.nes.width) and (y < self.nes.hight) and (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                     sprite_mask = np.ones((8, 16), np.uint8) - (sprite[0:8, 0:16] > 0) * 1
-                    disp_color_bg = self.nes.mem.ppu_mem[0x3f00 + self.bgcache[x:x+8, y:y+16]]
+                    disp_color_bg = self.nes.disp.pixels[x:x+8, y:y+16]
                     disp_color_spr = self.nes.mem.ppu_mem[0x3f10 + sprite[0:8, 0:16]]
                     sprite_masked_color_base = np.ones((8, 16), np.uint8) * self.nes.mem.ppu_mem[0x3f10] * sprite_mask
                     disp_color = disp_color_bg * sprite_mask + disp_color_spr - sprite_masked_color_base
-                    #np.transpose(self.nes.disp.surf)[0][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
-                    #np.transpose(self.nes.disp.surf)[1][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
-                    #np.transpose(self.nes.disp.surf)[2][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
-                    self.nes.disp.surf[x:x+8, y:y+16, :] = self.nes.disp.palette[disp_color, :]
+                    self.nes.disp.pixels[x:x+8, y:y+16] = disp_color
             else:
-                if (x + 8 < 256) and (y + 16 < 240) and (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
+                if (x < self.nes.width) and (y < self.nes.hight) and (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
                     bg_mask = np.ones((8, 16), np.uint8) - (self.bgcache[x:x+8, y:y+16] > 0) * 1
-                    disp_color_bg = self.nes.mem.ppu_mem[0x3f00 + self.bgcache[x:x+8, y:y+16]]
+                    disp_color_bg = self.nes.disp.pixels[x:x+8, y:y+16]
                     disp_color_spr = self.nes.mem.ppu_mem[0x3f10 + sprite[0:8, 0:16]]
                     sprite_masked_color_base = np.ones((8, 16), np.uint8) * self.nes.mem.ppu_mem[0x3f10] * bg_mask
                     disp_color = disp_color_spr * bg_mask + disp_color_bg - sprite_masked_color_base
-                    #np.transpose(self.nes.disp.surf)[0][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[0]
-                    #np.transpose(self.nes.disp.surf)[1][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[1]
-                    #np.transpose(self.nes.disp.surf)[2][y:y+16, x:x+8] = np.transpose(self.nes.disp.palette[disp_color])[2]
-                    self.nes.disp.surf[x:x+8, y:y+16, :] = self.nes.disp.palette[disp_color, :]
+                    self.nes.disp.pixels[x:x+8, y:y+16] = disp_color
 
 
     def render_sprites(self):

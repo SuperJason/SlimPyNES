@@ -71,7 +71,7 @@ class DISPLAY():
     def __init__(self, nes):
         self.nes = nes
         self.screen = None
-        self.surf = np.zeros((self.nes.width, self.nes.hight, 3), dtype=np.uint8)
+        self.pixels = np.zeros((self.nes.width + 8, self.nes.hight + 16), dtype=np.uint8)
 
     def init(self):
         pygame.init()
@@ -81,6 +81,7 @@ class DISPLAY():
         pygame.display.update()
 
     def update(self):
+        self.surf = self.palette[self.pixels[0:self.nes.width, 0:self.nes.hight]]
         surfarray.blit_array(self.screen, self.surf)
         pygame.display.flip()
 
