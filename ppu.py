@@ -344,7 +344,7 @@ class PPU():
             sprite = bit1 + bit2
 
             # add sprite attribute colors
-            if not bool(flip_spr_hor) and not bool(flip_spr_ver):
+  #          if not bool(flip_spr_hor) and not bool(flip_spr_ver):
 #                for i in range(8)[::-1]:
 #                    for j in range(8):
 #                        if sprite[7 - i][j] != 0:
@@ -352,10 +352,7 @@ class PPU():
  #               for j in range(8):
  #                   tmp_sprite = ((np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2))[::-1]
  #                   np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
-                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
-                tmp_sprite.dtype = 'uint8'
-                sprite[::-1, 0:8] += tmp_sprite[0:8, 0:8]
-            elif bool(flip_spr_hor) and not bool(flip_spr_ver):
+  #          elif bool(flip_spr_hor) and not bool(flip_spr_ver):
 #                for i in range(8):
 #                    for j in range(8):
 #                        if sprite[i][j] != 0:
@@ -363,10 +360,7 @@ class PPU():
  #               for j in range(8):
  #                   tmp_sprite = (np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2)
  #                   np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
-                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
-                tmp_sprite.dtype = 'uint8'
-                sprite[0:8, 0:8] += tmp_sprite[0:8, 0:8]
-            elif not bool(flip_spr_hor) and bool(flip_spr_ver):
+  #          elif not bool(flip_spr_hor) and bool(flip_spr_ver):
 #                for i in range(8)[::-1]:
 #                    for j in range(8)[::-1]:
 #                        if sprite[7 - i][7 - j] != 0:
@@ -374,10 +368,7 @@ class PPU():
  #               for j in range(8)[::-1]:
  #                   tmp_sprite = ((np.transpose(sprite)[7 - j] > 0) * ((attribs & 0x03) << 2))[::-1]
  #                   np.transpose(sprite)[7 - j] = np.transpose(sprite)[7 - j] + tmp_sprite
-                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
-                tmp_sprite.dtype = 'uint8'
-                sprite[::-1, 7::-1] += tmp_sprite[0:8, 0:8]
-            elif bool(flip_spr_hor) and bool(flip_spr_ver):
+  #          elif bool(flip_spr_hor) and bool(flip_spr_ver):
 #                for i in range(8):
 #                    for j in range(8)[::-1]:
 #                        if sprite[i][7 - j] != 0:
@@ -385,9 +376,8 @@ class PPU():
  #               for j in range(8)[::-1]:
  #                   tmp_sprite = (np.transpose(sprite)[7 - j] > 0) * ((attribs & 0x03) << 2)
  #                   np.transpose(sprite)[7 - j] = np.transpose(sprite)[7 - j] + tmp_sprite
-                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
-                tmp_sprite.dtype = 'uint8'
-                sprite[0:8, 7::-1] += tmp_sprite[0:8, 0:8]
+            tmp_sprite = ((sprite > 0) * ((attribs & 0x03) << 2)).astype(np.uint8)
+            sprite[0:8, 0:8] += tmp_sprite[0:8, 0:8]
 
 #            for i in range(8):
 #                for j in range(8):
@@ -503,7 +493,7 @@ class PPU():
             sprite = bit1 + bit2
 
             # add sprite attribute colors
-            if not bool(flip_spr_hor) and not bool(flip_spr_ver):
+  #          if not bool(flip_spr_hor) and not bool(flip_spr_ver):
 #                for i in range(8)[::-1]:
 #                    for j in range(16):
 #                        if sprite[7 - i][j] != 0:
@@ -511,10 +501,7 @@ class PPU():
  #               for j in range(16):
  #                   tmp_sprite = ((np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2))[::-1]
  #                   np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
-                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
-                tmp_sprite.dtype = 'uint8'
-                sprite[::-1, :] += tmp_sprite[:, :]
-            elif bool(flip_spr_hor) and not bool(flip_spr_ver):
+  #          elif bool(flip_spr_hor) and not bool(flip_spr_ver):
 #                for i in range(8):
 #                    for j in range(16):
 #                        if sprite[i][j] != 0:
@@ -522,10 +509,7 @@ class PPU():
  #               for j in range(16):
  #                   tmp_sprite = (np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2)
  #                   np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
-                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
-                tmp_sprite.dtype = 'uint8'
-                sprite[:, :] += tmp_sprite[:, :]
-            elif not bool(flip_spr_hor) and bool(flip_spr_ver):
+  #          elif not bool(flip_spr_hor) and bool(flip_spr_ver):
 #                for i in range(8)[::-1]:
 #                    for j in range(16)[::-1]:
 #                        if sprite[7 - i][15 - j] != 0:
@@ -533,10 +517,7 @@ class PPU():
  #               for j in range(16)[::-1]:
  #                   tmp_sprite = ((np.transpose(sprite)[15 - j] > 0) * ((attribs & 0x03) << 2))[::-1]
  #                   np.transpose(sprite)[7 - j] = np.transpose(sprite)[15 - j] + tmp_sprite
-                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
-                tmp_sprite.dtype = 'uint8'
-                sprite[::-1, ::-1] += tmp_sprite[:, :]
-            elif bool(flip_spr_hor) and bool(flip_spr_ver):
+  #          elif bool(flip_spr_hor) and bool(flip_spr_ver):
 #                for i in range(8):
 #                    for j in range(16)[::-1]:
 #                        if sprite[i][15 - j] != 0:
@@ -544,9 +525,8 @@ class PPU():
  #               for j in range(16)[::-1]:
  #                   tmp_sprite = (np.transpose(sprite)[15 - j] > 0) * ((attribs & 0x03) << 2)
  #                   np.transpose(sprite)[7 - j] = np.transpose(sprite)[15 - j] + tmp_sprite
-                tmp_sprite = (sprite > 0) * ((attribs & 0x03) << 2)
-                tmp_sprite.dtype = 'uint8'
-                sprite[:, ::-1] += tmp_sprite[:, :]
+            tmp_sprite = ((sprite > 0) * ((attribs & 0x03) << 2)).astype(np.uint8)
+            sprite[:, :] += tmp_sprite[:, :]
 
 #            for i in range(8):
 #                for j in range(16):
