@@ -93,8 +93,27 @@ class PPU():
         x_scroll = (self.loopyV & 0x1f)
         y_scroll = (self.loopyV & 0x03e0) >> 5
 
+        x_scroll_33list = np.arange(33, dtype=np.uint64) + x_scroll
+        x_scroll_0x1f_mask = (x_scroll_33list > 31).astype(np.uint64)
+        x_scroll_33list -= (x_scroll_0x1f_mask * 0x0020)
+
+        y_scroll_33list = np.zeros(33, dtype=np.uint64) + y_scroll
+
         nt_addr = 0x2000 + (self.loopyV & 0x0fff)
         at_addr = 0x2000 + (self.loopyV & 0x0c00) + 0x03c0 + ((y_scroll & 0xfffc) << 1) + (x_scroll >> 2)
+
+        nt_addr_33list = np.arange(33, dtype=np.uint64) + nt_addr
+        nt_addr_33list ^= (x_scroll_0x1f_mask * 0x0400)
+        nt_addr_33list -= (x_scroll_0x1f_mask * 0x0020)
+
+        offset = x_scroll & 0x0003
+        quad_list_36 = (np.ones((4,9), dtype=np.uint64) * np.arange(9, dtype=np.uint64)).T.reshape(1, 36)[0]
+        at_addr_33list_meta = quad_list_36[offset:offset + 33]
+        at_addr_33list = at_addr_33list_meta + at_addr
+        index_0x20 = 0x20 - x_scroll
+        at_addr_33list[index_0x20:] = (np.ones(33 - index_0x20, dtype=np.uint64) * at_addr_33list[index_0x20 - 1]) ^ 0x0400
+        at_addr_33list[index_0x20:] -= 0x0008
+        at_addr_33list[index_0x20:] += (quad_list_36[0:33 - index_0x20] + 1)
 
         if (y_scroll & 0x0002) == 0:
             if (x_scroll & 0x0002) == 0:
@@ -107,9 +126,52 @@ class PPU():
             else:
                 attribs = (self.nes.mem.ppu_mem[at_addr] & 0xC0) >> 4
 
-        if self.nes.debug & self.nes.PPU_BG_DBG:
-            print('[%d] nt_addr: %x, loopyT: %x, loopyV: %x, loopyX: %x'%(self.nes.cpu.dbg_cnt, nt_addr, self.loopyT, self.loopyV, self.loopyX))
+        #if self.nes.debug & self.nes.PPU_BG_DBG:
+        print('[%d] nt_addr: %x, loopyT: %x, loopyV: %x, loopyX: %x, x_scroll: %x'%(self.nes.cpu.dbg_cnt, nt_addr, self.loopyT, self.loopyV, self.loopyX, x_scroll))
 
+        attribs_33list_0 = (self.nes.mem.ppu_mem[at_addr_33list] & 0x03) << 2
+        attribs_33list_1 = (self.nes.mem.ppu_mem[at_addr_33list] & 0x0C)
+        attribs_33list_2 = (self.nes.mem.ppu_mem[at_addr_33list] & 0x30) >> 2
+        attribs_33list_3 = (self.nes.mem.ppu_mem[at_addr_33list] & 0xC0) >> 4
+
+        x_scroll_0x0001_mask_tmp = ((x_scroll_33list & 0x0001) == 0)
+        x_scroll_0x0001_mask_tmp[0] = True
+        attribs_mask_0 = (x_scroll_0x0001_mask_tmp & ((y_scroll_33list & 0x0002) == 0) & ((x_scroll_33list & 0x0002) == 0)).astype(np.uint64)
+        attribs_mask_1 = (x_scroll_0x0001_mask_tmp & ((y_scroll_33list & 0x0002) == 0) & ((x_scroll_33list & 0x0002) != 0)).astype(np.uint64)
+        attribs_mask_2 = (x_scroll_0x0001_mask_tmp & ((y_scroll_33list & 0x0002) != 0) & ((x_scroll_33list & 0x0002) == 0)).astype(np.uint64)
+        attribs_mask_3 = (x_scroll_0x0001_mask_tmp & ((y_scroll_33list & 0x0002) != 0) & ((x_scroll_33list & 0x0002) != 0)).astype(np.uint64)
+        attribs_mask_all_revert = ((attribs_mask_0 + attribs_mask_1 + attribs_mask_2 + attribs_mask_3) == 0).astype(np.uint64)
+
+        attribs_33list = attribs_33list_0 * attribs_mask_0 + attribs_33list_1 * attribs_mask_1
+        attribs_33list += attribs_33list_2 * attribs_mask_2 + attribs_33list_3 * attribs_mask_3
+
+        # Jason: make sure on changes attribes keep the last value
+        attribs_33list[1:] += attribs_33list[:-1] * attribs_mask_all_revert[1:]
+
+        # draw 33 tiles in a scanline (32 + 1 for scrolling)
+        # nt_data (ppu_memory[nt_addr]) * 16 = pattern table address
+        pt_addr_33list = (self.nes.mem.ppu_mem[nt_addr_33list].astype(np.uint64) << 4) + ((self.loopyV & 0x7000) >> 12)
+
+        # check if the pattern address needs to be high
+        if self.background_addr_hi():
+            pt_addr_33list += 0x1000
+
+        bit1_33list = (np.ones((33, 8)) * (1 << np.arange(8))).astype(np.uint8)
+        bit1_33list &= ((np.ones((33, 8)).T * self.nes.mem.ppu_mem[pt_addr_33list]).T).astype(np.uint8)
+        bit1_33list = (bit1_33list > 0) * 1
+        bit1_33list = bit1_33list[:, ::-1]
+
+        bit2_33list = (np.ones((33, 8)) * (1 << np.arange(8))).astype(np.uint8)
+        bit2_33list &= ((np.ones((33, 8)).T * self.nes.mem.ppu_mem[pt_addr_33list + 8]).T).astype(np.uint8)
+        bit2_33list = (bit2_33list > 0) * 2
+        bit2_33list = bit2_33list[:, ::-1]
+
+        tile_33list = bit1_33list + bit2_33list
+        tile_33list_tmp = (tile_33list > 0) * (np.ones((33, 8)).T * attribs_33list.T).astype(np.uint8).T
+        tile_33list = tile_33list + tile_33list_tmp
+
+        tmp_bgcache = self.bgcache
+        tmp_pixel = self.nes.disp.pixels
         # draw 33 tiles in a scanline (32 + 1 for scrolling)
         for tile_count in range(33):
             # nt_data (ppu_memory[nt_addr]) * 16 = pattern table address
@@ -119,12 +181,66 @@ class PPU():
             if self.background_addr_hi():
                 pt_addr += 0x1000
 
+            if nt_addr != nt_addr_33list[tile_count]:
+                print('[%d] nt_addr: 0x%x, 0x%x'%(tile_count, nt_addr, nt_addr_33list[tile_count]))
+                print('[%d] pt_addr: 0x%x, 0x%x'%(tile_count, pt_addr, pt_addr_33list[tile_count]))
+                print(x_scroll)
+                print(x_scroll_33list)
+                print(' '.join("%x" %b for b in x_scroll_33list))
+                print(nt_addr)
+                print(' '.join("%x" %b for b in nt_addr_33list))
+                exit()
+
+            if pt_addr != pt_addr_33list[tile_count]:
+                print('self.nes.mem.ppu_mem[0x%x]: 0x%x'%(nt_addr, self.nes.mem.ppu_mem[nt_addr]))
+                print('[%d] pt_addr: 0x%x, 0x%x'%(tile_count, pt_addr, pt_addr_33list[tile_count]))
+                print('[%d] nt_addr: 0x%x, 0x%x'%(tile_count, nt_addr, nt_addr_33list[tile_count]))
+                print(' '.join("%x" %b for b in nt_addr_33list))
+                print(' '.join("%x" %b for b in pt_addr_33list))
+                exit()
+
+            if at_addr != at_addr_33list[tile_count]:
+                print('[%d] at_addr: 0x%x, 0x%x'%(tile_count, at_addr, at_addr_33list[tile_count]))
+                print('x_scroll_33list:' + ' '.join("%x" %b for b in x_scroll_33list))
+                print('at_addr_33list:' + ' '.join("%x" %b for b in at_addr_33list))
+                print('at_addr_33list_meta:' + ' '.join("%x" %b for b in at_addr_33list_meta))
+                print('x_scroll_0x1f_mask:' + ' '.join("%x" %b for b in x_scroll_0x1f_mask))
+                exit()
+
+            if attribs != attribs_33list[tile_count]:
+                print('[%d] attribs: 0x%x, 0x%x'%(tile_count, attribs, attribs_33list[tile_count]))
+                print('attribs_33list:' + ' '.join("%x" %b for b in attribs_33list))
+                print('at_addr_33list:' + ' '.join("%x" %b for b in at_addr_33list))
+                print('self.nes.mem.ppu_mem[at_addr_33list]:' + ' '.join("%x" %b for b in self.nes.mem.ppu_mem[at_addr_33list]))
+                print('y_scroll_33list:' + ' '.join("%x" %b for b in y_scroll_33list))
+                print('x_scroll_33list:' + ' '.join("%x" %b for b in x_scroll_33list))
+                print('[%d] nt_addr: 0x%x, 0x%x'%(tile_count, nt_addr, nt_addr_33list[tile_count]))
+                print('self.nes.mem.ppu_mem[0x%x]: 0x%x'%(at_addr, self.nes.mem.ppu_mem[at_addr]))
+                print('attribs_33list_0:' + ' '.join("%x" %b for b in attribs_33list_0))
+                print('attribs_33list_1:' + ' '.join("%x" %b for b in attribs_33list_1))
+                print('attribs_33list_2:' + ' '.join("%x" %b for b in attribs_33list_2))
+                print('attribs_33list_3:' + ' '.join("%x" %b for b in attribs_33list_3))
+                print('attribs_mask_0:' + ' '.join("%x" %b for b in attribs_mask_0))
+                print('attribs_mask_1:' + ' '.join("%x" %b for b in attribs_mask_1))
+                print('attribs_mask_2:' + ' '.join("%x" %b for b in attribs_mask_2))
+                print('attribs_mask_3:' + ' '.join("%x" %b for b in attribs_mask_3))
+
+                exit()
+
             # fetch bits from pattern table
             #for i in range(8)[::-1]:
             #    bit1[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr] >> i) & 0x01)
             #    bit2[7 - i] = bool((self.nes.mem.ppu_mem[pt_addr + 8] >> i) & 0x01)
             bit1 = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[pt_addr]) > 0) * 1)[::-1]
             bit2 = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[pt_addr + 8]) > 0) * 1)[::-1] * 2
+
+            if (bit1 != bit1_33list[tile_count]).any():
+                print('[%d] bit1'%(tile_count))
+                exit()
+
+            if (bit2 != bit2_33list[tile_count]).any():
+                print('[%d] bit2'%(tile_count))
+                exit()
 
             # merge bits
             #for i in range(8):
@@ -138,6 +254,10 @@ class PPU():
             #        tile[i] = 3
             tile = bit1 + bit2
 
+            if (tile != tile_33list[tile_count]).any():
+                print('[%d] tile'%(tile_count))
+                exit()
+
             # merge colour
             #for i in range(8)[::-1]:
             #    # pixel transparency check
@@ -145,6 +265,10 @@ class PPU():
             #        tile[7 -i] += attribs
             tmp_tile = (tile > 0) * attribs
             tile = tile + tmp_tile
+
+            if (tile != tile_33list[tile_count]).any():
+                print('[%d] tile -2-'%(tile_count))
+                exit()
 
             if (tile_count == 0) and (self.loopyX != 0):
 #               for i in range(8 - self.loopyX):
@@ -161,6 +285,13 @@ class PPU():
                 disp_color = self.nes.mem.ppu_mem[0x3f00 + tile[self.loopyX:8]]
                 if tile_count < 32 and (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
                     self.nes.disp.pixels[(tile_count<<3):((tile_count<<3)+8-self.loopyX), scanline] = disp_color
+                if (self.bgcache[(tile_count<<3):((tile_count<<3)+8-self.loopyX), scanline] != tmp_bgcache[(tile_count<<3):((tile_count<<3)+8-self.loopyX), scanline]).any():
+                    print('[%d] bgcache -2-'%(tile_count))
+                    exit()
+
+                if (self.nes.disp.pixels[(tile_count<<3):((tile_count<<3)+8-self.loopyX), scanline] != tmp_pixel[(tile_count<<3):((tile_count<<3)+8-self.loopyX), scanline]).any():
+                    print('[%d] pixels -2-'%(tile_count))
+                    exit()
             elif (tile_count == 32) and (self.loopyX != 0):
 #               for i in range(self.loopyX):
 #                   # cache pixel
@@ -176,6 +307,14 @@ class PPU():
                 disp_color = self.nes.mem.ppu_mem[0x3f00 + tile[0:self.loopyX]]
                 if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
                     self.nes.disp.pixels[(tile_count<<3)-self.loopyX:(tile_count<<3), scanline] = disp_color
+
+                if (self.bgcache[(tile_count<<3)-self.loopyX:(tile_count<<3), scanline] != tmp_bgcache[(tile_count<<3)-self.loopyX:(tile_count<<3), scanline]).any():
+                    print('[%d] bgcache -2-'%(tile_count))
+                    exit()
+
+                if (self.nes.disp.pixels[(tile_count<<3)-self.loopyX:(tile_count<<3), scanline] != tmp_pixel[(tile_count<<3)-self.loopyX:(tile_count<<3), scanline]).any():
+                    print('[%d] pixels -2-'%(tile_count))
+                    exit()
             else:
 #               for i in range(8):
 #                   # cache pixel
@@ -191,6 +330,15 @@ class PPU():
                 disp_color = self.nes.mem.ppu_mem[0x3f00 + tile[0:8]]
                 if tile_count < 32 and (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
                     self.nes.disp.pixels[(tile_count<<3)-self.loopyX:((tile_count<<3)+8-self.loopyX), scanline] = disp_color
+
+                if (self.bgcache[(tile_count<<3)-self.loopyX:((tile_count<<3)+8-self.loopyX), scanline] != tmp_bgcache[(tile_count<<3)-self.loopyX:((tile_count<<3)+8-self.loopyX), scanline]).any():
+                    print('[%d] bgcache -3-'%(tile_count))
+                    exit()
+
+                if (self.nes.disp.pixels[(tile_count<<3)-self.loopyX:((tile_count<<3)+8-self.loopyX), scanline] != tmp_pixel[(tile_count<<3)-self.loopyX:((tile_count<<3)+8-self.loopyX), scanline]).any():
+                    print('[%d] pixels -3-'%(tile_count))
+                    exit()
+
 
             nt_addr += 1
             x_scroll += 1
