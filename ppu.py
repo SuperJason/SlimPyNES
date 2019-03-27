@@ -126,8 +126,8 @@ class PPU():
             else:
                 attribs = (self.nes.mem.ppu_mem[at_addr] & 0xC0) >> 4
 
-        #if self.nes.debug & self.nes.PPU_BG_DBG:
-        print('[%d] nt_addr: %x, loopyT: %x, loopyV: %x, loopyX: %x, x_scroll: %x'%(self.nes.cpu.dbg_cnt, nt_addr, self.loopyT, self.loopyV, self.loopyX, x_scroll))
+        if self.nes.debug & self.nes.PPU_BG_DBG:
+            print('[%d] nt_addr: %x, loopyT: %x, loopyV: %x, loopyX: %x'%(self.nes.cpu.dbg_cnt, nt_addr, self.loopyT, self.loopyV, self.loopyX))
 
         attribs_33list_0 = (self.nes.mem.ppu_mem[at_addr_33list] & 0x03) << 2
         attribs_33list_1 = (self.nes.mem.ppu_mem[at_addr_33list] & 0x0C)
@@ -170,8 +170,13 @@ class PPU():
         tile_33list_tmp = (tile_33list > 0) * (np.ones((33, 8)).T * attribs_33list.T).astype(np.uint8).T
         tile_33list = tile_33list + tile_33list_tmp
 
+        tiles = tile_33list.reshape(1, 33 * 8)[0]
         tmp_bgcache = self.bgcache
         tmp_pixel = self.nes.disp.pixels
+        tmp_bgcache[0:31*8, scanline] = tiles[self.loopyX:31*8+self.loopyX]
+        tmp_disp_color = self.nes.mem.ppu_mem[0x3f00 + tiles[self.loopyX:31*8+self.loopyX]]
+        if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
+            tmp_pixel[0:31*8, scanline] = tmp_disp_color
         # draw 33 tiles in a scanline (32 + 1 for scrolling)
         for tile_count in range(33):
             # nt_data (ppu_memory[nt_addr]) * 16 = pattern table address
@@ -254,10 +259,6 @@ class PPU():
             #        tile[i] = 3
             tile = bit1 + bit2
 
-            if (tile != tile_33list[tile_count]).any():
-                print('[%d] tile'%(tile_count))
-                exit()
-
             # merge colour
             #for i in range(8)[::-1]:
             #    # pixel transparency check
@@ -267,8 +268,13 @@ class PPU():
             tile = tile + tmp_tile
 
             if (tile != tile_33list[tile_count]).any():
-                print('[%d] tile -2-'%(tile_count))
+                print('[%d] tile'%(tile_count))
+                print('tile: ' + ' '.join("%x" %b for b in tile))
+                print('tile_33list[%d]: '%tile_count + ' '.join("%x" %b for b in tile_33list[tile_count]))
+                print(tile_33list)
+                print(attribs_33list)
                 exit()
+
 
             if (tile_count == 0) and (self.loopyX != 0):
 #               for i in range(8 - self.loopyX):
@@ -303,6 +309,8 @@ class PPU():
 #                       disp_y = scanline
 #                       disp_color = self.nes.mem.ppu_mem[0x3f00 + (tile[i])]
 #                       self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
+                #self.bgcache[(tile_count<<3):((tile_count<<3)+8-self.loopyX), scanline] = tile[self.loopyX:8]
+                #self.bgcache[(tile_count<<3)-self.loopyX:((tile_count<<3)+8-self.loopyX), scanline] = tile[0:8]
                 self.bgcache[(tile_count<<3)-self.loopyX:(tile_count<<3), scanline] = tile[0:self.loopyX]
                 disp_color = self.nes.mem.ppu_mem[0x3f00 + tile[0:self.loopyX]]
                 if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
