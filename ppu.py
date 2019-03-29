@@ -93,73 +93,73 @@ class PPU():
         x_scroll = (self.loopyV & 0x1f)
         y_scroll = (self.loopyV & 0x03e0) >> 5
 
-        x_scroll_33list = np.arange(33, dtype=np.uint64) + x_scroll
-        x_scroll_0x1f_mask = (x_scroll_33list > 31).astype(np.uint64)
-        x_scroll_33list -= (x_scroll_0x1f_mask * 0x0020)
-
-        y_scroll_33list = np.zeros(33, dtype=np.uint64) + y_scroll
-
         nt_addr = 0x2000 + (self.loopyV & 0x0fff)
         at_addr = 0x2000 + (self.loopyV & 0x0c00) + 0x03c0 + ((y_scroll & 0xfffc) << 1) + (x_scroll >> 2)
 
-        nt_addr_33list = np.arange(33, dtype=np.uint64) + nt_addr
-        nt_addr_33list ^= (x_scroll_0x1f_mask * 0x0400)
-        nt_addr_33list -= (x_scroll_0x1f_mask * 0x0020)
+        # draw 33 tiles in a scanline (32 + 1 for scrolling)
+        x_scroll_array = np.arange(33, dtype=np.uint64) + x_scroll
+        x_scroll_0x1f_mask = (x_scroll_array > 31).astype(np.uint64)
+        x_scroll_array -= (x_scroll_0x1f_mask * 0x0020)
+
+        y_scroll_array = np.zeros(33, dtype=np.uint64) + y_scroll
+
+        nt_addr_array = np.arange(33, dtype=np.uint64) + nt_addr
+        nt_addr_array ^= (x_scroll_0x1f_mask * 0x0400)
+        nt_addr_array -= (x_scroll_0x1f_mask * 0x0020)
 
         offset = x_scroll & 0x0003
         quad_list_36 = (np.ones((4,9), dtype=np.uint64) * np.arange(9, dtype=np.uint64)).T.reshape(1, 36)[0]
-        at_addr_33list_meta = quad_list_36[offset:offset + 33]
-        at_addr_33list = at_addr_33list_meta + at_addr
+        at_addr_array_meta = quad_list_36[offset:offset + 33]
+        at_addr_array = at_addr_array_meta + at_addr
         index_0x20 = 0x20 - x_scroll
-        at_addr_33list[index_0x20:] = (np.ones(33 - index_0x20, dtype=np.uint64) * at_addr_33list[index_0x20 - 1]) ^ 0x0400
-        at_addr_33list[index_0x20:] -= 0x0008
-        at_addr_33list[index_0x20:] += (quad_list_36[0:33 - index_0x20] + 1)
+        at_addr_array[index_0x20:] = (np.ones(33 - index_0x20, dtype=np.uint64) * at_addr_array[index_0x20 - 1]) ^ 0x0400
+        at_addr_array[index_0x20:] -= 0x0008
+        at_addr_array[index_0x20:] += (quad_list_36[0:33 - index_0x20] + 1)
 
         if self.nes.debug & self.nes.PPU_BG_DBG:
             print('[%d] nt_addr: %x, loopyT: %x, loopyV: %x, loopyX: %x'%(self.nes.cpu.dbg_cnt, nt_addr, self.loopyT, self.loopyV, self.loopyX))
 
-        attribs_33list_0 = (self.nes.mem.ppu_mem[at_addr_33list] & 0x03) << 2
-        attribs_33list_1 = (self.nes.mem.ppu_mem[at_addr_33list] & 0x0C)
-        attribs_33list_2 = (self.nes.mem.ppu_mem[at_addr_33list] & 0x30) >> 2
-        attribs_33list_3 = (self.nes.mem.ppu_mem[at_addr_33list] & 0xC0) >> 4
+        attribs_array_0 = (self.nes.mem.ppu_mem[at_addr_array] & 0x03) << 2
+        attribs_array_1 = (self.nes.mem.ppu_mem[at_addr_array] & 0x0C)
+        attribs_array_2 = (self.nes.mem.ppu_mem[at_addr_array] & 0x30) >> 2
+        attribs_array_3 = (self.nes.mem.ppu_mem[at_addr_array] & 0xC0) >> 4
 
-        x_scroll_0x0001_mask_tmp = ((x_scroll_33list & 0x0001) == 0)
+        x_scroll_0x0001_mask_tmp = ((x_scroll_array & 0x0001) == 0)
         x_scroll_0x0001_mask_tmp[0] = True
-        attribs_mask_0 = (x_scroll_0x0001_mask_tmp & ((y_scroll_33list & 0x0002) == 0) & ((x_scroll_33list & 0x0002) == 0)).astype(np.uint64)
-        attribs_mask_1 = (x_scroll_0x0001_mask_tmp & ((y_scroll_33list & 0x0002) == 0) & ((x_scroll_33list & 0x0002) != 0)).astype(np.uint64)
-        attribs_mask_2 = (x_scroll_0x0001_mask_tmp & ((y_scroll_33list & 0x0002) != 0) & ((x_scroll_33list & 0x0002) == 0)).astype(np.uint64)
-        attribs_mask_3 = (x_scroll_0x0001_mask_tmp & ((y_scroll_33list & 0x0002) != 0) & ((x_scroll_33list & 0x0002) != 0)).astype(np.uint64)
+        attribs_mask_0 = (x_scroll_0x0001_mask_tmp & ((y_scroll_array & 0x0002) == 0) & ((x_scroll_array & 0x0002) == 0)).astype(np.uint64)
+        attribs_mask_1 = (x_scroll_0x0001_mask_tmp & ((y_scroll_array & 0x0002) == 0) & ((x_scroll_array & 0x0002) != 0)).astype(np.uint64)
+        attribs_mask_2 = (x_scroll_0x0001_mask_tmp & ((y_scroll_array & 0x0002) != 0) & ((x_scroll_array & 0x0002) == 0)).astype(np.uint64)
+        attribs_mask_3 = (x_scroll_0x0001_mask_tmp & ((y_scroll_array & 0x0002) != 0) & ((x_scroll_array & 0x0002) != 0)).astype(np.uint64)
         attribs_mask_all_revert = ((attribs_mask_0 + attribs_mask_1 + attribs_mask_2 + attribs_mask_3) == 0).astype(np.uint64)
 
-        attribs_33list = attribs_33list_0 * attribs_mask_0 + attribs_33list_1 * attribs_mask_1
-        attribs_33list += attribs_33list_2 * attribs_mask_2 + attribs_33list_3 * attribs_mask_3
+        attribs_array = attribs_array_0 * attribs_mask_0 + attribs_array_1 * attribs_mask_1
+        attribs_array += attribs_array_2 * attribs_mask_2 + attribs_array_3 * attribs_mask_3
 
         # Jason: make sure on changes attribes keep the last value
-        attribs_33list[1:] += attribs_33list[:-1] * attribs_mask_all_revert[1:]
+        attribs_array[1:] += attribs_array[:-1] * attribs_mask_all_revert[1:]
 
-        # draw 33 tiles in a scanline (32 + 1 for scrolling)
         # nt_data (ppu_memory[nt_addr]) * 16 = pattern table address
-        pt_addr_33list = (self.nes.mem.ppu_mem[nt_addr_33list].astype(np.uint64) << 4) + ((self.loopyV & 0x7000) >> 12)
+        pt_addr_array = (self.nes.mem.ppu_mem[nt_addr_array].astype(np.uint64) << 4) + ((self.loopyV & 0x7000) >> 12)
 
         # check if the pattern address needs to be high
         if self.background_addr_hi():
-            pt_addr_33list += 0x1000
+            pt_addr_array += 0x1000
 
-        bit1_33list = (np.ones((33, 8)) * (1 << np.arange(8))).astype(np.uint8)
-        bit1_33list &= ((np.ones((33, 8)).T * self.nes.mem.ppu_mem[pt_addr_33list]).T).astype(np.uint8)
-        bit1_33list = (bit1_33list > 0) * 1
-        bit1_33list = bit1_33list[:, ::-1]
+        bit1_array = (np.ones((33, 8)) * (1 << np.arange(8))).astype(np.uint8)
+        bit1_array &= ((np.ones((33, 8)).T * self.nes.mem.ppu_mem[pt_addr_array]).T).astype(np.uint8)
+        bit1_array = (bit1_array > 0) * 1
+        bit1_array = bit1_array[:, ::-1]
 
-        bit2_33list = (np.ones((33, 8)) * (1 << np.arange(8))).astype(np.uint8)
-        bit2_33list &= ((np.ones((33, 8)).T * self.nes.mem.ppu_mem[pt_addr_33list + 8]).T).astype(np.uint8)
-        bit2_33list = (bit2_33list > 0) * 2
-        bit2_33list = bit2_33list[:, ::-1]
+        bit2_array = (np.ones((33, 8)) * (1 << np.arange(8))).astype(np.uint8)
+        bit2_array &= ((np.ones((33, 8)).T * self.nes.mem.ppu_mem[pt_addr_array + 8]).T).astype(np.uint8)
+        bit2_array = (bit2_array > 0) * 2
+        bit2_array = bit2_array[:, ::-1]
 
-        tile_33list = bit1_33list + bit2_33list
-        tile_33list_tmp = (tile_33list > 0) * (np.ones((33, 8)).T * attribs_33list.T).astype(np.uint8).T
-        tile_33list = tile_33list + tile_33list_tmp
+        tile_array = bit1_array + bit2_array
+        tile_array_tmp = (tile_array > 0) * (np.ones((33, 8)).T * attribs_array.T).astype(np.uint8).T
+        tile_array = tile_array + tile_array_tmp
 
-        tiles = tile_33list.reshape(1, 33 * 8)[0]
+        tiles = tile_array.reshape(1, 33 * 8)[0]
         self.bgcache[0:32*8, scanline] = tiles[self.loopyX:32*8+self.loopyX]
         disp_color = self.nes.mem.ppu_mem[0x3f00 + tiles[self.loopyX:32*8+self.loopyX]]
         if (self.nes.enable_background == 1) and (self.background_on()) and (self.nes.skipframe == 0):
@@ -190,12 +190,6 @@ class PPU():
 
     def check_sprite_hit(self, scanline):
         # sprite zero detection
-#        for i in range(self.nes.width):
-#            if (self.bgcache[i][scanline - 1] > 0) and (self.sprcache[i][scanline - 1] > 0):
-#                # set the sprite zero flag
-#                if self.nes.debug & self.nes.PPU_SPR_DBG:
-#                    print('debug [%d]: sprite zero found at x:%d, y:%d'%(self.nes.cpu.dbg_cnt, i, scanline - 1))
-#                self.status |= 0x40
         if ((np.transpose(self.bgcache)[scanline - 1] > 0) & (np.transpose(self.sprcache)[scanline - 1] > 0)).any():
                 self.status |= 0x40
 
@@ -228,125 +222,29 @@ class PPU():
             # 8 x 8 sprites
             # fetch bits
             if not bool(flip_spr_hor) and not bool(flip_spr_ver):
-#                for i in range(8)[::-1]:
-#                    for j in range(8):
-#                        bit1[7 - i][j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
-#                        bit2[7 - i][j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
- #               for j in range(8):
- #                   np.transpose(bit1)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)[::-1]
- #                   np.transpose(bit2)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)[::-1]
                 t = ((1 << np.arange(8)) * np.ones(64, dtype=np.uint8).reshape(8, 8)).T
                 bit1[::-1, 0:8] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
                 bit2[::-1, 0:8] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 2
             elif bool(flip_spr_hor) and not bool(flip_spr_ver):
-#                for i in range(8):
-#                    for j in range(8):
-#                        bit1[i][j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
-#                        bit2[i][j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
- #               for j in range(8):
- #                   np.transpose(bit1)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)
- #                   np.transpose(bit2)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)
                 t = ((1 << np.arange(8)) * np.ones(64, dtype=np.uint8).reshape(8, 8)).T
                 bit1[:, 0:8] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
                 bit2[:, 0:8] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 2
             elif not bool(flip_spr_hor) and bool(flip_spr_ver):
-#                for i in range(8)[::-1]:
-#                    for j in range(8)[::-1]:
-#                        bit1[7 - i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
-#                        bit2[7 - i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
- #               for j in range(8)[::-1]:
- #                   np.transpose(bit1)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)[::-1]
- #                   np.transpose(bit2)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)[::-1]
                 t = ((1 << np.arange(8)) * np.ones(64, dtype=np.uint8).reshape(8, 8)).T
                 bit1[::-1, 7::-1] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
                 bit2[::-1, 7::-1] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 2
             elif bool(flip_spr_hor) and bool(flip_spr_ver):
-#                for i in range(8):
-#                    for j in range(8)[::-1]:
-#                        bit1[i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
-#                        bit2[i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
- #               for j in range(8)[::-1]:
- #                   np.transpose(bit1)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)
- #                   np.transpose(bit2)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)
                 t = ((1 << np.arange(8)) * np.ones(64, dtype=np.uint8).reshape(8, 8)).T
                 bit1[::-1, 7::-1] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
                 bit2[::-1, 7::-1] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 2
 
             # merge bits
-#            for i in range(8):
-#                for j in range(8):
-#                    if (bit1[i][j] == 0) and (bit2[i][j] == 0):
-#                        sprite[i][j] = 0
-#                    elif (bit1[i][j] == 1) and (bit2[i][j] == 0):
-#                        sprite[i][j] = 1
-#                    elif (bit1[i][j] == 0) and (bit2[i][j] == 1):
-#                        sprite[i][j] = 2
-#                    elif (bit1[i][j] == 1) and (bit2[i][j] == 1):
-#                        sprite[i][j] = 3
- #           for j in range(8):
- #               np.transpose(sprite)[j] = np.transpose(bit1)[j] + np.transpose(bit2)[j]
             sprite = bit1 + bit2
 
             # add sprite attribute colors
-  #          if not bool(flip_spr_hor) and not bool(flip_spr_ver):
-#                for i in range(8)[::-1]:
-#                    for j in range(8):
-#                        if sprite[7 - i][j] != 0:
-#                            sprite[7 - i][j] += ((attribs & 0x03) << 2)
- #               for j in range(8):
- #                   tmp_sprite = ((np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2))[::-1]
- #                   np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
-  #          elif bool(flip_spr_hor) and not bool(flip_spr_ver):
-#                for i in range(8):
-#                    for j in range(8):
-#                        if sprite[i][j] != 0:
-#                            sprite[i][j] += ((attribs & 0x03) << 2)
- #               for j in range(8):
- #                   tmp_sprite = (np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2)
- #                   np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
-  #          elif not bool(flip_spr_hor) and bool(flip_spr_ver):
-#                for i in range(8)[::-1]:
-#                    for j in range(8)[::-1]:
-#                        if sprite[7 - i][7 - j] != 0:
-#                            sprite[7 - i][7 - j] += ((attribs & 0x03) << 2)
- #               for j in range(8)[::-1]:
- #                   tmp_sprite = ((np.transpose(sprite)[7 - j] > 0) * ((attribs & 0x03) << 2))[::-1]
- #                   np.transpose(sprite)[7 - j] = np.transpose(sprite)[7 - j] + tmp_sprite
-  #          elif bool(flip_spr_hor) and bool(flip_spr_ver):
-#                for i in range(8):
-#                    for j in range(8)[::-1]:
-#                        if sprite[i][7 - j] != 0:
-#                            sprite[i][7 - j] += ((attribs & 0x03) << 2)
- #               for j in range(8)[::-1]:
- #                   tmp_sprite = (np.transpose(sprite)[7 - j] > 0) * ((attribs & 0x03) << 2)
- #                   np.transpose(sprite)[7 - j] = np.transpose(sprite)[7 - j] + tmp_sprite
             tmp_sprite = ((sprite > 0) * ((attribs & 0x03) << 2)).astype(np.uint8)
             sprite[0:8, 0:8] += tmp_sprite[0:8, 0:8]
 
-#            for i in range(8):
-#                for j in range(8):
-#                    # cache pixel for sprite zero detection
-#                    if spr_nr == 0:
-#                        self.sprcache[x + i][y + j] = sprite[i][j]
-#
-#                    if sprite[i][j] != 0:
-#                        # sprite priority check
-#                        if not disp_spr_back:
-#                            if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
-#                                # draw pixel
-#                                disp_x = x + i
-#                                disp_y = y + j
-#                                disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-#                                self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
-#                        else:
-#                            if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
-#                                # draw the sprite pixel if the background pixel is transparent (0)
-#                                if self.bgcache[x + i][y + j] == 0:
-#                                    # draw pixel
-#                                    disp_x = x + i
-#                                    disp_y = y + j
-#                                    disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-#                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
             if spr_nr == 0:
                 self.sprcache[x:x+8, y:y+8] = sprite[0:8, 0:8]
             if not disp_spr_back:
@@ -369,127 +267,29 @@ class PPU():
             # 8 x 16 sprites
             # fetch bits
             if not bool(flip_spr_hor) and not bool(flip_spr_ver):
-#                for i in range(8)[::-1]:
-#                    for j in range(16):
-#                        bit1[7 - i][j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
-#                        bit2[7 - i][j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
- #               for j in range(16):
- #                   np.transpose(bit1)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)[::-1]
- #                   np.transpose(bit2)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)[::-1]
                 t = ((1 << np.arange(8)) * np.ones(8*16, dtype=np.uint8).reshape(8, 16)).T
                 bit1[::-1, :] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
                 bit2[::-1, :] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 2
             elif bool(flip_spr_hor) and not bool(flip_spr_ver):
-#                for i in range(8):
-#                    for j in range(16):
-#                        bit1[i][j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
-#                        bit2[i][j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
- #               for j in range(16):
- #                   np.transpose(bit1)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)
- #                   np.transpose(bit2)[j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)
                 t = ((1 << np.arange(8)) * np.ones(8*16, dtype=np.uint8).reshape(8, 16)).T
                 bit1[:, :] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
                 bit2[:, :] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 2
             elif not bool(flip_spr_hor) and bool(flip_spr_ver):
-#                for i in range(8)[::-1]:
-#                    for j in range(16)[::-1]:
-#                        bit1[7 - i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
-#                        bit2[7 - i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
-# TODO [15 - j]?, run here when sprite invert to headstand
- #               for j in range(16)[::-1]:
- #                   np.transpose(bit1)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)[::-1]
- #                   np.transpose(bit2)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)[::-1]
                 t = ((1 << np.arange(8)) * np.ones(8*16, dtype=np.uint8).reshape(8, 16)).T
                 bit1[::-1, ::-1] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
                 bit2[::-1, ::-1] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 2
             elif bool(flip_spr_hor) and bool(flip_spr_ver):
-#                for i in range(8):
-#                    for j in range(16)[::-1]:
-#                        bit1[i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + j] >> i) & 0x01)
-#                        bit2[i][7 - j] = bool((self.nes.mem.ppu_mem[spr_start + 8 + j] >> i) & 0x01)
-# TODO [15 - j]?, run here when sprite invert to headstand
- #               for j in range(8)[::-1]:
- #                   np.transpose(bit1)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + j]) > 0) * 1)
- #                   np.transpose(bit2)[7 - j] = ((((1 << np.arange(8)) & self.nes.mem.ppu_mem[spr_start + 8 + j]) > 0) * 2)
                 t = ((1 << np.arange(8)) * np.ones(8*16, dtype=np.uint8).reshape(8, 16)).T
                 bit1[:, ::-1] = ((t & self.nes.mem.ppu_mem[spr_start:spr_start+8]) > 0) * 1
                 bit2[:, ::-1] = ((t & self.nes.mem.ppu_mem[spr_start+8:spr_start+8+8]) > 0) * 2
 
             # merge bits
-#            for i in range(8):
-#                for j in range(16):
-#                    if (bit1[i][j] == 0) and (bit2[i][j] == 0):
-#                        sprite[i][j] = 0
-#                    elif (bit1[i][j] == 1) and (bit2[i][j] == 0):
-#                        sprite[i][j] = 1
-#                    elif (bit1[i][j] == 0) and (bit2[i][j] == 1):
-#                        sprite[i][j] = 2
-#                    elif (bit1[i][j] == 1) and (bit2[i][j] == 1):
-#                        sprite[i][j] = 3
- #           for j in range(16):
- #               np.transpose(sprite)[j] = np.transpose(bit1)[j] + np.transpose(bit2)[j]
             sprite = bit1 + bit2
 
             # add sprite attribute colors
-  #          if not bool(flip_spr_hor) and not bool(flip_spr_ver):
-#                for i in range(8)[::-1]:
-#                    for j in range(16):
-#                        if sprite[7 - i][j] != 0:
-#                            sprite[7 - i][j] += ((attribs & 0x03) << 2)
- #               for j in range(16):
- #                   tmp_sprite = ((np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2))[::-1]
- #                   np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
-  #          elif bool(flip_spr_hor) and not bool(flip_spr_ver):
-#                for i in range(8):
-#                    for j in range(16):
-#                        if sprite[i][j] != 0:
-#                            sprite[i][j] += ((attribs & 0x03) << 2)
- #               for j in range(16):
- #                   tmp_sprite = (np.transpose(sprite)[j] > 0) * ((attribs & 0x03) << 2)
- #                   np.transpose(sprite)[j] = np.transpose(sprite)[j] + tmp_sprite
-  #          elif not bool(flip_spr_hor) and bool(flip_spr_ver):
-#                for i in range(8)[::-1]:
-#                    for j in range(16)[::-1]:
-#                        if sprite[7 - i][15 - j] != 0:
-#                            sprite[7 - i][15 - j] += ((attribs & 0x03) << 2)
- #               for j in range(16)[::-1]:
- #                   tmp_sprite = ((np.transpose(sprite)[15 - j] > 0) * ((attribs & 0x03) << 2))[::-1]
- #                   np.transpose(sprite)[7 - j] = np.transpose(sprite)[15 - j] + tmp_sprite
-  #          elif bool(flip_spr_hor) and bool(flip_spr_ver):
-#                for i in range(8):
-#                    for j in range(16)[::-1]:
-#                        if sprite[i][15 - j] != 0:
-#                            sprite[i][15 - j] += ((attribs & 0x03) << 2)
- #               for j in range(16)[::-1]:
- #                   tmp_sprite = (np.transpose(sprite)[15 - j] > 0) * ((attribs & 0x03) << 2)
- #                   np.transpose(sprite)[7 - j] = np.transpose(sprite)[15 - j] + tmp_sprite
             tmp_sprite = ((sprite > 0) * ((attribs & 0x03) << 2)).astype(np.uint8)
             sprite[:, :] += tmp_sprite[:, :]
 
-#            for i in range(8):
-#                for j in range(16):
-#                    # cache pixel for sprite zero detection
-#                    if spr_nr == 0:
-#                        self.sprcache[x + i][y + j] = sprite[i][j]
-#
-#                    if sprite[i][j] != 0:
-#                        # sprite priority check
-#                        if not disp_spr_back:
-#                            if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
-#                                # draw pixel
-#                                disp_x = x + i
-#                                disp_y = y + j
-#                                disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-#                                self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
-#                        else:
-#                            # draw the sprite pixel if the background pixel is transparent (0)
-#                            if self.bgcache[x + i][y + j] == 0:
-#                                if (self.nes.enable_sprites == 1) and (self.sprite_on()) and (self.nes.skipframe == 0):
-#                                    # draw pixel
-#                                    disp_x = x + i
-#                                    disp_y = y + j
-#                                    disp_color = self.nes.mem.ppu_mem[0x3f10 + (sprite[i][j])]
-#                                    self.nes.disp.set_pixel(disp_x, disp_y, disp_color)
             if spr_nr == 0:
                 self.sprcache[x:x+8, y:y+16] = sprite[0:8, 0:16]
             if not disp_spr_back:
@@ -508,7 +308,6 @@ class PPU():
                     sprite_masked_color_base = np.ones((8, 16), np.uint8) * self.nes.mem.ppu_mem[0x3f10] * bg_mask
                     disp_color = disp_color_spr * bg_mask + disp_color_bg - sprite_masked_color_base
                     self.nes.disp.pixels[x:x+8, y:y+16] = disp_color
-
 
     def render_sprites(self):
         # clear sprite cache

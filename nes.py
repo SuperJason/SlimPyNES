@@ -87,6 +87,9 @@ class DISPLAY():
 
     def getevent(self):
         for event in pygame.event.get():
+            if event.type == QUIT:
+                print('QUIT event, so exit! ###')
+                exit()
             if event.type == pygame.KEYDOWN:
                 #print(' -----  DOWN event.key' + str(event.key))
                 if event.key == pygame.K_ESCAPE:
